@@ -1,0 +1,45 @@
+Genes model chemicals, basic genetic units or behaviours?
+. Let's go for actual genes, not behaviours or chemicals. Chemicals are too low level, and not all checmical combinations can be replicated. Behaviours are too high level. Thus, we musn't think of each letter making up the genetic unit as a chemical, but as a type of gene coding for one structure (See below). 
+
+If they are actual genes, how do we create behaviour?
+. Genes must then do two things: create structure and behaviour. Behaviour should be indirectly caused by the structure itself: i.e. the arising structure processes input and turns it into output. So the "world rules" that detail the outcome of interaction with the world are rules tied to world building blocks, not to the genes themselves. The genes code for these building blocks and not for the behaviour that emerges out of these conglomeration of building blocks.
+
+We assume basic replicability. We are not simulating the genesis of life, but the emergence of complexity, after replicability is taken for granted.
+
+How can we code for structure, which in turn determines world interactions?
+. One way is to map each letter onto strings of on/off bits, for simplicity. More accurately, each string of letters is mapped uniquely onto a 2D pattern of white/black cells (a barcode). This barcode determines how its encoding individual interacts with other individuals (barcodes): At each simulation step, the barcode is evolved once according to Game of Life (GoL) rules. Thus, the genes only indirectly determine behaviour, as in real life, through the resulting structure and its world interactions. At each point in the simulation, the individual barcode integrates information from the external world into itself (e.g. food cells turn into barcode cells; third-party barcode cells integrate with itse barcode), which models the short-term adaptive behaviour of the individual.
+
+How do individuals interact?
+. Individuals (i.e. barcodes) interact in two phases: the overlap phase, and the coincidence phase. The overlap phase occurs when two barcodes overlap physically but do not coincide (i.e. their origin is different). During the overlap phase, an individual merely integrates competitor barcode cells with its own (there is no competition). During the coincidence phase,  the individual enters into a "fight" with the competitor using its current barcode as a starting point. The result can be either that they reproduce, or that one eats the other. This is determined by simulating for a number of steps and counting the number of cells that remain. If cells from both survive, they reproduce. If one dies, the other wins (and is replenished in the process). If both die, they simply both die.
+
+During the coincidence phase, first the barcodes are subtracted from each other. Second, the resulting difference map is evolved according to Game of Life rules, or as closely as possible. 
+
+That only determines individual-individual interactions. How about individual-world interactions?
+Barcode interactions seem reasonable here too, and they allow a near infinite number of possibilities. Interactions with the world are of two types: movement and structural. Movement interactions determine the next step of movement. Structural interactions add/remove building blocks from the individual barcode or the world map.
+
+What are movement interactions?
+. At every step, the current barcode determines the next step: Each bit (cell) of the barcode is placed in one of 4 alternating, consecutive buckets and their totals determine the movement in the up, right, down and left directions.
+
+What are structural interactions?
+. The barcode interacts at each step with the "barcode" of the world + competitors: any food cell is integrated into the individual's barcode at the position it coincided with the barcode. If the cell was already occupied, it has no effect. Otherwise, the barcode integrates with it and evolves in future steps as if it had been part of the body all along. When a food cell is so integrated, it is removed from the world map.
+Competitor barcodes are similarly integrated into individuals' barcodes during overlap phases. However, the cells are not "taken away" from competitors (who, in the meantime, experience a similar reverse integration). 
+
+How is food replenished?
+. When an individual dies, it leaves behind the last barcode pattern before last as food cells, unless it is eaten by a competitor. 
+
+How do individuals die?
+. They can 1) be eaten by a competitor as described above; 2) die naturally when their barcode vanishes; 3) die through lack of food
+
+Instead of genes representing initial barcodes, we can have genes that represent barcode evolution rules themselves. This raises the possibility of using Wolfram-style automata. It also raises two questions: 1) what would the initial barcode pattern be? 2) How do we create increasing genetic complexity? 3) How do we resolve fighting between different rule sets? 4) How do we handle food deprivation/death?
+. 1) This can be determined from the first tile/region that the individual lies on. Random brownian motion can be added to motion vector in order to prevent simple all-0s tiles from hindering all motion of conservative individual rule sets.
+. 2) can be answered as follows: the genes incrementally determine the rules in increasing complexity. The first 2 genes determine the future cell given the current cell, the next 8 genes determine the future center cell given a neighborhood of 3 cells (2^3), the next 512 genes use a neighborhood of 9 cells, etc. Inevitably, this will lead to old simple genes being made redundant by more specialised ones, which may after all be a realistic phenomenon. Thus, once the set of 8 3-neighborhood genes are specialised, the 2 1-neighborhood genes become redundant and can be ignored. In the meantime, most cases are intermediate, and require that a pass be made with the simple pattern matches, followed by passes with the more specialised gene patterns (applied on the barcode pattern before the simple pass throughs)
+3) Individual-individual interactions can be resolved by: first, finding the complement of the intersection of both barcodes; second, updating each separately; third, repeating first and second steps for a number of times; fourth, making the check above to see if any, both, or none have died.
+4) Food is depleted proportionally to the "size" of the current pattern, i.e. the number of active cells right now. This gives a measure of the "energy" being used by the individual, and thus penalises individuals with high energy requirements and individuals with simple all-on barcodes. If an individual runs out of food units, it dies. 
+
+What are structural interactions on this ruleset?
+. World-interactions define just that: world interactions, and the number of possibilities is huge, depending on the size of the barcode. For a 16x16 barcode, there are 2^256 possible interactions, 1.15x10^77 of them. This vast number models the many ways the real world can affect an organism, without explicitly defining each dimension of interaction. At each position update of the individual, the barcode of the environment is updated (virtually) for a single step. If the new number of cells is less than the old number, the individual has a "surplus" and leaves a new cell in the environment randomly. If the new number of cells is increased, the individual extracts the difference randomly from the environment barcode and adds it to its energy. Inividuals with a surplus don't consume energy. All others do. 
+Aside from the virtual updates, the environment barcode is also integrated into the current individual barcode to determine its positional update and future behaviour.
+
+How do we handle "exits", by for example, children leaving the region of the parent?
+
+What about surplus individuals? Will they never die in this case?
