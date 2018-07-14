@@ -19,11 +19,18 @@ namespace ABME
         Individual(Environment& environment, Chromosome chromosome);
         ~Individual();
 
+        bool AddDropFood(cv::Mat& environment, int numToTake);
+        bool BeBorn();
         void DrawBarcode(std::string& windowName);
-        bool AddDropFood(cv::Mat& environment, std::string& representation, int& numTiles);
         const std::string& GetBarcodeString() const;
         int InteractWithEnvironment(std::string& regionRepresenation);
+        void Kill();
         void Update(cv::Mat& baseEnvironment, cv::Mat& interactableEnvironment, Environment::ColocationMapType& colocations);
+
+        inline bool IsAlive() const
+        {
+            return Alive;
+        }
 
         Environment& ItsEnvironment;
         Chromosome ItsChromosome;
@@ -33,6 +40,9 @@ namespace ABME
         int X = -1;
         int Y = -1;
         int LastCellsActive = 0;
+        int Balance = 0;
+
+    protected:
         bool Alive = true;
     };
 }

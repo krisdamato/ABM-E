@@ -15,7 +15,7 @@ int main()
     GlobalSettings::Initialise();
 
     // Create an environment and individuals.
-    Environment environment(512, 512, 0.15f);
+    Environment environment(512, 512, 0.04f);
     environment.Initialise({ {4, 1000} }, false, true);
 
     // Get first individual.

@@ -26,25 +26,34 @@ namespace ABME
     }
 
 
-    bool Individual::AddDropFood(cv::Mat& environment, std::string& representation, int& difference)
+    bool Individual::AddDropFood(cv::Mat& environment, int numToTake)
     {
         // If it's a "sink"...
-        if (difference > 0)
+        if (numToTake > 0)
         {
-            int toExtract = 1;
-            CurrentBarcode->ExtractTiles(environment, X, Y, toExtract);
-            if (toExtract > 0) return false;
+            CurrentBarcode->ExtractTiles(environment, X, Y, numToTake);
+            if (numToTake > 0) return false;
         }
         // Or if it's a "source"...
-        else if (difference < 0)
+        else if (numToTake < 0)
         {
-            // Return one "food" tile to the environment.
-            int toAdd = 1;
-            CurrentBarcode->DropTiles(environment, X, Y, toAdd, true);
-            if (toAdd > 0) ItsEnvironment.RegisterFoodAddition(toAdd);
+            // Return "food" tiles to the environment.
+            CurrentBarcode->DropTiles(environment, X, Y, numToTake, true);
+            if (numToTake < 0) ItsEnvironment.RegisterFoodAddition(-numToTake);
         }
 
         return true;
+    }
+
+    bool Individual::BeBorn()
+    {
+        if (AddDropFood(ItsEnvironment.GetMap(), 1))
+        {
+            ++Balance;
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -78,6 +87,14 @@ namespace ABME
     }
 
 
+    void Individual::Kill()
+    {
+        Alive = false;
+        if (Balance > 0) AddDropFood(ItsEnvironment.GetMap(), -Balance);
+        else ItsEnvironment.RegisterFoodAddition(Balance);
+    }
+
+
     void Individual::Update(Mat& baseEnvironment, Mat& interactableEnvironment, Environment::ColocationMapType& colocations)
     {
         // Integrate environmental input.
@@ -96,7 +113,17 @@ namespace ABME
         auto representation = Helpers::ConvertMatToString(baseRegion);
         int difference = cellsActive - LastCellsActive;
         bool foundFood = true;
-        if (difference != 0) foundFood = AddDropFood(baseEnvironment, representation, difference);
+        
+        if (difference != 0)
+        {
+            foundFood = AddDropFood(baseEnvironment, difference > 0 ? 1 : -1);
+
+            // Update consumption balance.
+            if (foundFood)
+            {
+                Balance = difference > 0 ? Balance + 1 : Balance - 1;
+            }
+        }
 
         // Perform movement.
         X += movement[0];
@@ -111,7 +138,7 @@ namespace ABME
         // An individual dies if it has no food or all or no cell is active.
         if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundFood)
         {
-            Alive = false;
+            Kill();
             return;
         }
 

@@ -53,8 +53,8 @@ namespace ABME
         auto secondCount = secondClone.CountLiveCells();
 
         // Kill any that have zero cells.
-        if (firstCount == 0) first.Alive = false;
-        if (secondCount == 0) second.Alive = false;
+        if (firstCount == 0) first.Kill();
+        if (secondCount == 0) second.Kill();
 
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
@@ -121,7 +121,7 @@ namespace ABME
             uchar geneValue = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
             newChromosome[geneIndex] = geneValue;
 
-            std::cout << "INSERTION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
+            //std::cout << "INSERTION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
         }
 
         // Delete mutation.
@@ -133,7 +133,7 @@ namespace ABME
             for (auto i = 0; i < removePosition; ++i, ++it);
             newChromosome.erase(it);
 
-            std::cout << "DELETION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
+            //std::cout << "DELETION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
         }
 
         // Mutate.
@@ -153,7 +153,15 @@ namespace ABME
         offspring->X = first.X;
         offspring->Y = first.Y;
 
-        return offspring;
+        // Take a food tile from the environment and update balance.
+        if (offspring->BeBorn())
+        {
+            return offspring;
+        }
+        
+        // If there is no food tile to take, the offspring dies.
+        delete offspring;
+        return nullptr;
     }
 
     Individual* Interactor::ReproduceFixedGenes(Individual& first, Individual& second)

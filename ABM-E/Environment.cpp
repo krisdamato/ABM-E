@@ -34,6 +34,11 @@ namespace ABME
             }
         }
 
+        for (auto& ind : Individuals)
+        {
+            count += ind->Balance;
+        }
+
         return count;
     }
 
@@ -72,11 +77,14 @@ namespace ABME
             }
         }
 
-        // Assign random positions.
+        // Assign random positions and set balances to 1 
+        // so that every individual returns one food tile to the
+        // environment.
         for (auto& individual : Individuals)
         {
             individual->X = distWidth(GlobalSettings::RNG);
             individual->Y = distHeight(GlobalSettings::RNG);
+            individual->Balance++;
         }
     }
 
@@ -119,7 +127,7 @@ namespace ABME
         // Remove dead individuals.
         for (auto it = Individuals.begin(); it != Individuals.end();)
         {
-            if (!(*it)->Alive)
+            if (!(*it)->IsAlive())
             {
                 it = Individuals.erase(it);
                 ++diedNaturally;
@@ -169,7 +177,7 @@ namespace ABME
         // Remove more dead individuals.
         for (auto it = Individuals.begin(); it != Individuals.end();)
         {
-            if (!(*it)->Alive)
+            if (!(*it)->IsAlive())
             {
                 it = Individuals.erase(it);
                 ++killed;
@@ -235,20 +243,35 @@ namespace ABME
     }
 
 
-    void Environment::GenerateRandomFood(int numTiles)
+    /// Generates (or removes) a specific number of foot tiles, depending
+    /// on the sign of the argument.
+    void Environment::GenerateRandomFood(int numTilesToAdd)
     {
         std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - 1);
         std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - 1);
 
-        while (numTiles > 0)
+        while (numTilesToAdd > 0)
         {
             auto x = distWidth(GlobalSettings::RNG);
             auto y = distHeight(GlobalSettings::RNG);
+            auto& tile = Map.at<uchar>(y, x);
 
-            if (Map.at<uchar>(y, x) == 255) continue;
-            else Map.at<uchar>(y, x) = 255;
+            if (tile == 255) continue;
+            else tile = 255;
 
-            --numTiles;
+            --numTilesToAdd;
+        }
+
+        while (numTilesToAdd < 0)
+        {
+            auto x = distWidth(GlobalSettings::RNG);
+            auto y = distHeight(GlobalSettings::RNG);
+            auto& tile = Map.at<uchar>(y, x);
+
+            if (tile == 0) continue;
+            else tile = 0;
+
+            ++numTilesToAdd;
         }
     }
 

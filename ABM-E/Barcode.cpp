@@ -135,7 +135,8 @@ namespace ABME
 
 
     /// Randomly adds food tiles to the environment.
-    void Barcode::DropTiles(cv::Mat& environment, int x, int y, int& numFoodTiles, bool useActiveCells) const
+    /// Note: numToTake must be negative here.
+    void Barcode::DropTiles(cv::Mat& environment, int x, int y, int& numToTake, bool useActiveCells) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
@@ -152,13 +153,13 @@ namespace ABME
         for (auto i : relativeIndices)
         {
             environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize) = 255;
-            --numFoodTiles;
-            if (numFoodTiles <= 0) break;
+            ++numToTake;
+            if (numToTake >= 0) break;
         }
     }
 
 
-    void Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int& numFoodTiles) const
+    void Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int& numToTake) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
@@ -174,8 +175,8 @@ namespace ABME
         for (auto i : relativeIndices)
         {
             environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize) = 0;
-            --numFoodTiles;
-            if (numFoodTiles <= 0) break;
+            --numToTake;
+            if (numToTake <= 0) break;
         }
     }
 
