@@ -15,7 +15,7 @@ namespace ABME
 
         Environment(int width, int height, float probFood);
 
-        int CountFoodCells(bool includeBoundFood) const;
+        int CountFoodCells() const;
         void Draw(std::string& windowName) const;
         cv::Mat& GetMap();
 

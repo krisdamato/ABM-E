@@ -27,12 +27,10 @@ namespace ABME
         static const double GeneticInsertionRate;
         static const double GeneticDeletionRate;
         static const int NumGenes = 522;
-        static const int FixedSeed = 7;
-        static const bool Randomise = true;
+        static const int FixedSeed = 0;
+        static const bool Randomise = false;
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;
-        static const int StartFood = BarcodeSize * BarcodeSize;
-        static const int OffspringCost = StartFood / 3;
 
     protected:
         static std::vector<int> GeneIndices;

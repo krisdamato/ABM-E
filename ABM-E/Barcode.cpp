@@ -135,13 +135,14 @@ namespace ABME
 
 
     /// Randomly adds food tiles to the environment.
-    void Barcode::Output(cv::Mat& environment, int x, int y, int& numFoodTiles) const
+    void Barcode::DropTiles(cv::Mat& environment, int x, int y, int& numFoodTiles, bool useActiveCells) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
         {
             auto& tile = environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize);
-            if (tile == 0) relativeIndices.push_back(i);
+            auto& cell = barcode[i];
+            if (tile == 0 && (!useActiveCells || cell == '1')) relativeIndices.push_back(i);
         }
 
         // Shuffle the indices.
@@ -152,6 +153,29 @@ namespace ABME
         {
             environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize) = 255;
             --numFoodTiles;
+            if (numFoodTiles <= 0) break;
+        }
+    }
+
+
+    void Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int& numFoodTiles) const
+    {
+        std::vector<int> relativeIndices;
+        for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
+        {
+            auto& tile = environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize);
+            if (tile == 255) relativeIndices.push_back(i);
+        }
+
+        // Shuffle the indices.
+        std::shuffle(relativeIndices.begin(), relativeIndices.end(), GlobalSettings::RNG);
+
+        // Pick spots to extract from.
+        for (auto i : relativeIndices)
+        {
+            environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize) = 0;
+            --numFoodTiles;
+            if (numFoodTiles <= 0) break;
         }
     }
 

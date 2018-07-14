@@ -23,7 +23,7 @@ namespace ABME
     }
 
 
-    int Environment::CountFoodCells(bool includeBoundFood) const
+    int Environment::CountFoodCells() const
     {
         int count = 0;
         for (auto i = 0; i < Map.cols; ++i)
@@ -31,15 +31,6 @@ namespace ABME
             for (auto j = 0; j < Map.rows; ++j)
             {
                 if (Map.at<uchar>(j, i) == 255) ++count;
-            }
-        }
-
-        if (includeBoundFood)
-        {
-            for (auto& individual : Individuals)
-            {
-                count += individual->Food;
-                count += individual->LastCellsActive;
             }
         }
 
@@ -195,6 +186,7 @@ namespace ABME
 
         if (i % 100 == 0)
         {
+            std::cout.precision(3);
             std::cout << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
             std::map<int, int> genePool;
             for (auto& individual : Individuals)
@@ -202,10 +194,14 @@ namespace ABME
                 genePool[individual->ItsChromosome.size()]++;
             }
 
+            float averageLength = 0.f;
             for (auto&[length, count] : genePool)
             {
                 std::cout << "Chromosome length " << length << ": " << count << " individuals.\n";
+                averageLength += length * count;
             }
+            if (Individuals.size() > 0) averageLength /= Individuals.size();
+            std::cout << "Avg. chromosome length: " << averageLength << std::endl;
 
             born = 0;
             killed = 0;

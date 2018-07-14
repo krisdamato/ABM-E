@@ -56,41 +56,13 @@ namespace ABME
         if (firstCount == 0) first.Alive = false;
         if (secondCount == 0) second.Alive = false;
 
-        // Nutrify lone remainers.
-        if (firstCount > 0 && secondCount == 0) first.Food += second.Food + second.LastCellsActive;
-        if (secondCount > 0 && firstCount == 0) second.Food += first.Food + first.LastCellsActive;
-
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
         if (firstCount > 0 && secondCount > 0)
         {
-            auto firstFoodCost = std::min(first.Food, GlobalSettings::OffspringCost);
-            auto secondFoodCost = std::min(second.Food, GlobalSettings::OffspringCost);
-
-            first.Food -= firstFoodCost; second.Food -= secondFoodCost;
             cv::Mat& environment = first.ItsEnvironment.GetMap();
             
-            if (first.Food <= 0)
-            {
-                first.Alive = false;
-                first.DropFood(environment, first.LastCellsActive);
-            }
-            
-            if (second.Food <= 0)
-            {
-                second.Alive = false;
-                second.DropFood(environment, second.LastCellsActive);
-            }
-
-            return Reproduce(first, second, firstFoodCost + secondFoodCost);
-        }
-
-        // If both died, leave some food.
-        if (firstCount == 0 && secondCount == 0)
-        {
-            cv::Mat& environment = first.ItsEnvironment.GetMap();
-            first.DropFood(environment, first.Food + first.LastCellsActive);
-            second.DropFood(environment, second.Food + second.LastCellsActive);
+            return Reproduce(first, second);
         }
 
         return nullptr;
@@ -99,7 +71,7 @@ namespace ABME
 
     /// Reproduces by randomly selecting each gene from one of the individuals,
     /// inserts/deletes new genes, and applies mutation.
-    Individual* Interactor::Reproduce(Individual& first, Individual& second, int food)
+    Individual* Interactor::Reproduce(Individual& first, Individual& second)
     {
         std::uniform_real_distribution<> dist(0.0, 1.0);
 
@@ -136,13 +108,13 @@ namespace ABME
         }
 
         // Insert mutation.
-        if (dist(GlobalSettings::RNG) < GlobalSettings::GeneticInsertionRate && newChromosome.size() < GlobalSettings::NumGenes)
+        if ((dist(GlobalSettings::RNG) < GlobalSettings::GeneticInsertionRate) && (newChromosome.size() < GlobalSettings::NumGenes))
         {
             auto geneIndex = -1;
             bool done = false;
             while (!done)
             {
-                auto geneIndex = distGeneIndex(GlobalSettings::RNG);
+                geneIndex = distGeneIndex(GlobalSettings::RNG);
                 done = newChromosome.count(geneIndex) == 0;
             }
             
@@ -153,7 +125,7 @@ namespace ABME
         }
 
         // Delete mutation.
-        if (dist(GlobalSettings::RNG) < GlobalSettings::GeneticDeletionRate && newChromosome.size() >= 2)
+        if ((dist(GlobalSettings::RNG) < GlobalSettings::GeneticDeletionRate) && (newChromosome.size() >= 2))
         {
             // Remove a random gene.
             int removePosition = distDeleteIndex(GlobalSettings::RNG);
@@ -180,12 +152,11 @@ namespace ABME
         auto offspring = new Individual(first.ItsEnvironment, newChromosome);
         offspring->X = first.X;
         offspring->Y = first.Y;
-        offspring->Food = food;
 
         return offspring;
     }
 
-    Individual* Interactor::ReproduceFixedGenes(Individual& first, Individual& second, int food)
+    Individual* Interactor::ReproduceFixedGenes(Individual& first, Individual& second)
     {
         std::uniform_real_distribution<> dist(0.0, 1.0);
 
@@ -236,7 +207,6 @@ namespace ABME
         auto offspring = new Individual(first.ItsEnvironment, newChromosome);
         offspring->X = first.X;
         offspring->Y = first.Y;
-        offspring->Food = food;
 
         return offspring;
     }

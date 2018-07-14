@@ -20,8 +20,7 @@ namespace ABME
         ~Individual();
 
         void DrawBarcode(std::string& windowName);
-        void DropFood(cv::Mat& environment, int numFoodTiles);
-        void ExtractFood(cv::Mat& environment, std::string& representation, int& numTiles);
+        bool AddDropFood(cv::Mat& environment, std::string& representation, int& numTiles);
         const std::string& GetBarcodeString() const;
         int InteractWithEnvironment(std::string& regionRepresenation);
         void Update(cv::Mat& baseEnvironment, cv::Mat& interactableEnvironment, Environment::ColocationMapType& colocations);
@@ -31,7 +30,6 @@ namespace ABME
         std::unique_ptr<Barcode> CurrentBarcode;
 
         int Age = 0;
-        int Food = GlobalSettings::StartFood;
         int X = -1;
         int Y = -1;
         int LastCellsActive = 0;

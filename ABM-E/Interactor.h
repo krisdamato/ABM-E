@@ -14,7 +14,7 @@ namespace ABME
 
     protected:
         static Individual* Interact(Individual& first, Individual& second);
-        static Individual* Reproduce(Individual& first, Individual& second, int food);
-        static Individual* ReproduceFixedGenes(Individual& first, Individual& second, int food);
+        static Individual* Reproduce(Individual& first, Individual& second);
+        static Individual* ReproduceFixedGenes(Individual& first, Individual& second);
     };
 }

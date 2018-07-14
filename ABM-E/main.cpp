@@ -15,7 +15,7 @@ int main()
     GlobalSettings::Initialise();
 
     // Create an environment and individuals.
-    Environment environment(512, 512, 0.01f);
+    Environment environment(512, 512, 0.15f);
     environment.Initialise({ {4, 1000} }, false, true);
 
     // Get first individual.
@@ -43,7 +43,7 @@ int main()
             drawEnvironment = !drawEnvironment;
             break;
         case 'f':
-            std::cout << "Num. food cells: " << environment.CountFoodCells(true) << std::endl;
+            std::cout << "Num. food cells: " << environment.CountFoodCells() << std::endl;
             break;
         case 'q': 
             running = false;

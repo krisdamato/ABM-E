@@ -26,49 +26,25 @@ namespace ABME
     }
 
 
-    /// Adds food tiles as the current active cell positions.
-    void Individual::DropFood(cv::Mat& environment, int numFoodTiles)
-    {
-        Food -= numFoodTiles;
-        CurrentBarcode->Output(environment, X, Y, numFoodTiles);
-        
-        // If some food tiles remain, let the environment to add them randomly.
-        ItsEnvironment.RegisterFoodAddition(numFoodTiles);   
-    }
-
-
-    void Individual::ExtractFood(cv::Mat& environment, std::string& representation, int& numTiles)
+    bool Individual::AddDropFood(cv::Mat& environment, std::string& representation, int& difference)
     {
         // If it's a "sink"...
-        if (numTiles > 0)
+        if (difference > 0)
         {
-            for (int i = 0; i < representation.size() && numTiles > 0; ++i)
-            {
-                if (representation[i] == '1')
-                {
-                    environment.at<uchar>(Y + i / GlobalSettings::BarcodeSize, X + i % GlobalSettings::BarcodeSize) = 0;
-                    --numTiles;
-                }
-            }
+            int toExtract = 1;
+            CurrentBarcode->ExtractTiles(environment, X, Y, toExtract);
+            if (toExtract > 0) return false;
         }
         // Or if it's a "source"...
-        else if (numTiles < 0)
+        else if (difference < 0)
         {
-            // Replenish food to starting point...
-            auto diff = std::min(GlobalSettings::StartFood - Food, -numTiles);
-            Food += diff;
-            numTiles += diff;
-
-            // ...and return the extra supply to the map.
-            for (int i = 0; i < representation.size() && numTiles < 0; ++i)
-            {
-                if (representation[i] == '0')
-                {
-                    environment.at<uchar>(Y + i / GlobalSettings::BarcodeSize, X + i % GlobalSettings::BarcodeSize) = 255;
-                    ++numTiles;
-                }
-            }
+            // Return one "food" tile to the environment.
+            int toAdd = 1;
+            CurrentBarcode->DropTiles(environment, X, Y, toAdd, true);
+            if (toAdd > 0) ItsEnvironment.RegisterFoodAddition(toAdd);
         }
+
+        return true;
     }
 
 
@@ -119,7 +95,8 @@ namespace ABME
         // Leave or extract some "food".
         auto representation = Helpers::ConvertMatToString(baseRegion);
         int difference = cellsActive - LastCellsActive;
-        if (difference != 0) ExtractFood(baseEnvironment, representation, difference);
+        bool foundFood = true;
+        if (difference != 0) foundFood = AddDropFood(baseEnvironment, representation, difference);
 
         // Perform movement.
         X += movement[0];
@@ -128,18 +105,13 @@ namespace ABME
         Y = std::max(0, std::min(interactableEnvironment.rows - GlobalSettings::BarcodeSize, Y));
 
         // Only update food if we couldn't extract or deposit new tiles.
-        Food -= difference;
         LastCellsActive = cellsActive;
 
         // Update live status.
-        // An individual dies if it has no food or no cell is active (consumption = 0).
-        if (Food == 0 || cellsActive == 0)
+        // An individual dies if it has no food or all or no cell is active.
+        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundFood)
         {
             Alive = false;
-
-            // The individual still leaves some cells in the environment.
-            if (Food + cellsActive > 0) DropFood(baseEnvironment, Food + cellsActive);
-
             return;
         }
 
