@@ -209,7 +209,19 @@ namespace ABME
                 averageLength += length * count;
             }
             if (Individuals.size() > 0) averageLength /= Individuals.size();
-            std::cout << "Avg. chromosome length: " << averageLength << std::endl;
+            std::cout << "\nAvg. chromosome length: " << averageLength << std::endl;
+
+            // Report most popular chromosome.
+            std::vector<Chromosome> chromosomes;
+            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsChromosome);
+
+            std::pair<Chromosome, int> chrCount = Helpers::MostPopularChromosome(chromosomes);
+            std::pair<Chromosome, int> chrTypeCount = Helpers::MostPopularChromosome(chromosomes, true);
+            
+            std::cout << "\nMost common chromosome type [" << chrTypeCount.second << "]: \n";
+            std::cout << Helpers::ConvertChromosomeToString(chrTypeCount.first, true) << std::endl;
+            std::cout << "Most common chromosome [" << chrCount.second << "]: \n";
+            std::cout << Helpers::ConvertChromosomeToString(chrCount.first, false) << std::endl;
 
             born = 0;
             killed = 0;

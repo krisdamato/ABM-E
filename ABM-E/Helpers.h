@@ -192,5 +192,78 @@ namespace ABME
                 geneValues.push_back(value);
             }
         }
+
+
+        /// Counts chromosomes.
+        inline std::map<Chromosome, int> ChromosomeCounts(std::vector<Chromosome>& chromosomes)
+        {
+            std::map<Chromosome, int> counts;
+            for (auto& chr : chromosomes)
+            {
+                ++counts[chr];
+            }
+
+            return counts;
+        }
+
+
+        /// Counts chromosomes.
+        inline std::map<Chromosome, int> ChromosomeTypeCounts(std::vector<Chromosome>& chromosomes)
+        {
+            std::map<Chromosome, int> counts;
+            for (auto& chr : chromosomes)
+            {
+                Chromosome emptyChromosome;
+                for (auto&[index, count] : chr) emptyChromosome[index] = 0;
+                ++counts[emptyChromosome];
+            }
+
+            return counts;
+        }
+
+
+        /// Returns the most popular chromosome and its count.
+        inline std::pair<Chromosome, int> MostPopularChromosome(std::vector<Chromosome>& chromosomes, bool typeOnly = false)
+        {
+            // Get counts.
+            auto countMap = typeOnly ? ChromosomeTypeCounts(chromosomes) : ChromosomeCounts(chromosomes);
+
+            Chromosome mostPopular;
+            int maximum = 0;
+            for (auto&[chr, count] : countMap)
+            {
+                if (count > maximum)
+                {
+                    maximum = count;
+                    mostPopular = chr;
+                }
+            }
+
+            return std::pair(mostPopular, maximum);
+        }
+
+
+        /// Converts a chromosome to a string representation.
+        inline std::string ConvertChromosomeToString(Chromosome& chromosome, bool indicesOnly)
+        {
+            std::stringstream chrString;
+            chrString << "|";
+            for (auto&[index, value] : chromosome)
+            {
+                chrString << index << "|";
+            }
+            chrString << std::endl;
+            if (!indicesOnly)
+            {
+                chrString << "|";
+                for (auto&[index, value] : chromosome)
+                {
+                    chrString << value << "|";
+                }
+                chrString << std::endl;
+            }
+
+            return chrString.str();
+        }
     }
 }
