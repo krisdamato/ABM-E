@@ -1,6 +1,6 @@
 #include "Individual.h"
 
-#include <opencv2\highgui.hpp>
+#include <opencv2/highgui.hpp>
 #include "Barcode.h"
 #include "GlobalSettings.h"
 

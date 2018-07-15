@@ -1,6 +1,6 @@
 #include <ctime>
 #include <opencv2/core.hpp>
-#include <opencv2\highgui.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include "Environment.h"
 #include "GlobalSettings.h"
@@ -40,7 +40,6 @@ int main(int argc, char** argv)
     {
         environment.Update();
         if (drawEnvironment) environment.Draw(envWindowName);
-        //individual.DrawBarcode(indWindowName);
         auto key = waitKey(1);
         switch (key)
         {

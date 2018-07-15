@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include <opencv2\highgui.hpp>
+#include <opencv2/highgui.hpp>
 #include "Helpers.h"
 
 namespace ABME
