@@ -45,10 +45,24 @@ namespace ABME
 
     void Environment::Draw(std::string& windowName) const
     {
-        Mat drawMap = Map.clone();
-        for (auto& individual : Individuals)
+        // Convert from gayscale to color.
+        Mat drawMap = cv::Mat(Map.rows, Map.cols, CV_8UC4);
+        cv::cvtColor(Map, drawMap, cv::COLOR_GRAY2BGRA);
+
+        // Get chromosome length range.
+        size_t min = 522;
+        size_t max = 0;
+        for (auto& ind : Individuals)
         {
-            rectangle(drawMap, Rect(individual->X, individual->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), 128);
+            min = std::min(min, ind->ItsChromosome.size());
+            max = std::max(max, ind->ItsChromosome.size());
+        }
+
+        for (auto& ind : Individuals)
+        {
+            int redLevel = max > min ? 255 * float(ind->ItsChromosome.size() - min) / (max - min) : 128;
+            int blueLevel = 255 - redLevel;
+            rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
         }
 
         imshow(windowName, drawMap);
@@ -217,11 +231,19 @@ namespace ABME
 
             std::pair<Chromosome, int> chrCount = Helpers::MostPopularChromosome(chromosomes);
             std::pair<Chromosome, int> chrTypeCount = Helpers::MostPopularChromosome(chromosomes, true);
-            
+            auto geneCountSet = Helpers::GeneStatistics(chromosomes);
+
             std::cout << "\nMost common chromosome type [" << chrTypeCount.second << "]: \n";
             std::cout << Helpers::ConvertChromosomeToString(chrTypeCount.first, true) << std::endl;
             std::cout << "Most common chromosome [" << chrCount.second << "]: \n";
             std::cout << Helpers::ConvertChromosomeToString(chrCount.first, false) << std::endl;
+            std::cout << "Most common genes:\n";
+            int j = 0;
+            for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 5; ++it, ++j)
+            {
+                std::cout << "[" << it->second << "] " << it->first.first << ":" << it->first.second << std::endl;
+            }
+            std::cout << std::endl;
 
             born = 0;
             killed = 0;
@@ -257,6 +279,7 @@ namespace ABME
 
     /// Generates (or removes) a specific number of foot tiles, depending
     /// on the sign of the argument.
+    /// Warning! This will hang the application if it does not find an empty/food tile.
     void Environment::GenerateRandomFood(int numTilesToAdd)
     {
         std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - 1);

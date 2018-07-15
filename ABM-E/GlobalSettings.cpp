@@ -1,6 +1,7 @@
 #include "GlobalSettings.h"
 
 #include <numeric>
+#include <omp.h>
 
 namespace ABME
 {
@@ -11,9 +12,10 @@ namespace ABME
     std::vector<int> GlobalSettings::GeneIndices;
     std::vector<int> GlobalSettings::BarcodeRandoms;
     int GlobalSettings::NextRandomIndex = 0;
+    int GlobalSettings::NumThreads = 1;
 
 
-    void GlobalSettings::Initialise()
+    void GlobalSettings::Initialise(int numThreads)
     {
         auto randomDevice = std::random_device();
         RNG.seed(Randomise ? randomDevice() : FixedSeed);
@@ -36,5 +38,9 @@ namespace ABME
         {
             BarcodeRandoms.push_back(dist(RNG));
         }
+
+        // Set number of OpenMP threads.
+        NumThreads = numThreads;
+        omp_set_num_threads(NumThreads);
     }
 }

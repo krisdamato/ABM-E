@@ -6,6 +6,7 @@
 #include <map>
 #include <numeric>
 #include <random>
+#include <set>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -13,6 +14,7 @@
 
 namespace ABME
 {
+    using Gene = std::pair<int, uchar>;
     using Chromosome = std::map<int, uchar>;
 
     class BadGeneIndexException: std::exception
@@ -36,6 +38,17 @@ namespace ABME
             return false;
         }
     };
+
+
+    class GeneCountComparator
+    {
+    public:
+        bool operator()(const std::pair<Gene, int>& first, const std::pair<Gene, int>& second) const
+        {
+            return first.second > second.second;
+        }
+    };
+
 
     namespace Helpers
     {
@@ -240,6 +253,31 @@ namespace ABME
             }
 
             return std::pair(mostPopular, maximum);
+        }
+
+
+        /// Returns a map of gene counts.
+        inline std::set<std::pair<Gene, int>, GeneCountComparator> GeneStatistics(std::vector<Chromosome>& chromosomes)
+        {
+            std::map<Gene, int> geneCounts;
+            
+            for (auto& chr : chromosomes)
+            {
+                for (auto&[index, value] : chr)
+                {
+                    ++geneCounts[std::pair(index, value)];
+                }
+            }
+
+            // Convert the dictionary to a set ordered by its counts.
+            std::set<std::pair<Gene, int>, GeneCountComparator> genePool;
+
+            for (auto&[gene, count] : geneCounts)
+            {
+                genePool.insert(std::pair(gene, count));
+            }
+
+            return genePool;
         }
 
 

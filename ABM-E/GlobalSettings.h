@@ -7,7 +7,7 @@ namespace ABME
     class GlobalSettings
     {
     public:
-        static void Initialise();
+        static void Initialise(int numThreads);
         
         inline static int GetGeneIndex(int i)
         {
@@ -27,7 +27,7 @@ namespace ABME
         static const double GeneticInsertionRate;
         static const double GeneticDeletionRate;
         static const int NumGenes = 522;
-        static const int FixedSeed = 1;
+        static const int FixedSeed = 5;
         static const bool Randomise = false;
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;
@@ -36,6 +36,7 @@ namespace ABME
         static std::vector<int> GeneIndices;
         static std::vector<int> BarcodeRandoms;
         static const int RandomsSize = 200000;
+        static int NumThreads;
         static int NextRandomIndex;
     };
 }

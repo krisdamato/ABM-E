@@ -1,5 +1,6 @@
 #include "Barcode.h"
 
+#include <omp.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
@@ -236,6 +237,7 @@ namespace ABME
     {
         std::string& update = updateInto == nullptr ? barcode : *updateInto;
 
+#pragma omp parallel for
         for (int j = 0; j < height; ++j)
         {
             std::string subBarcode = oldBarcode.substr(j * width, width);
@@ -272,15 +274,12 @@ namespace ABME
     {
         std::string& update = updateInto == nullptr ? barcode : *updateInto;
 
+#pragma omp parallel for
         for (int j = 0; j < height - 2; ++j)
         {
             auto subBarcode = oldBarcode.substr(j * width, width);
             std::vector<size_t> firstMatchPositions;
             std::vector<size_t> positions;
-
-            // Reserve capacity for speed.
-            firstMatchPositions.reserve(GlobalSettings::BarcodeSize);
-            positions.reserve(GlobalSettings::BarcodeSize);
 
             auto firstPatternLine = pattern.substr(0, 3);
 
