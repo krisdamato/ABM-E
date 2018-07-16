@@ -27,7 +27,7 @@ namespace ABME
         static const double GeneticInsertionRate;
         static const double GeneticDeletionRate;
         static const int NumGenes = 522;
-        static const int FixedSeed = 5;
+        static const int FixedSeed = 6;
         static const bool Randomise = false;
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;

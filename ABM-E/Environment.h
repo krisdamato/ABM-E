@@ -15,15 +15,19 @@ namespace ABME
 
         Environment(int width, int height, float probFood);
 
-        int CountFoodCells() const;
+        void CapturePopulation();
+        int CauseTileCrisis(int numTilesToAdd);
+        int CountActiveTiles(bool includeBoundBalance) const;
         void Draw(std::string& windowName) const;
         cv::Mat& GetMap();
-
         void Initialise(std::map<int, int> lengthCounts, bool useSameGeneIndices, bool useSimpleGenesFirst);
         void RegisterFoodAddition(int numTiles);
+        void ReleasePopulation();
         void Update();
 
         Individual& operator[](int index);
+
+        bool PopulationCaptured = false;
 
     protected:
         void GenerateRandomFood(float probFood);
@@ -34,6 +38,7 @@ namespace ABME
         cv::Mat Map;
         cv::Mat Snapshot;
         std::vector<std::unique_ptr<Individual>> Individuals;
+        std::vector<std::unique_ptr<Individual>> Captured;
         int NumFoodCellsToAdd = 0;
     };
 }

@@ -21,6 +21,7 @@ namespace ABME
 
         bool AddDropFood(cv::Mat& environment, int numToTake);
         bool BeBorn();
+        Individual* Clone(bool ignoreBalance) const;
         void DrawBarcode(std::string& windowName);
         const std::string& GetBarcodeString() const;
         int InteractWithEnvironment(std::string& regionRepresenation);

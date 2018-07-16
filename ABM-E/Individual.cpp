@@ -57,6 +57,25 @@ namespace ABME
     }
 
 
+    Individual* Individual::Clone(bool ignoreBalance) const
+    {
+        auto* individual = new Individual(ItsEnvironment, ItsChromosome);
+        individual->Age = Age;
+        individual->X = X;
+        individual->Y = Y;
+
+        // Copy barcode pattern.
+        individual->CurrentBarcode->SetStringRepresentation(CurrentBarcode->GetStringRepresentation());
+
+        // Only copy balance if required. When capturing populations,
+        // for instance, balance is best kept 0 so that the overall tile
+        // number does not change.
+        individual->Balance = ignoreBalance ? 0 : Balance;
+
+        return individual;
+    }
+
+
     const std::string& Individual::GetBarcodeString() const
     {
         return CurrentBarcode->GetStringRepresentation();

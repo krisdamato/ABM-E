@@ -23,7 +23,41 @@ namespace ABME
     }
 
 
-    int Environment::CountFoodCells() const
+    /// Copies the existing population for future release.
+    void Environment::CapturePopulation()
+    {
+        // Clear current contents.
+        Captured.clear();
+
+        for (auto& ind : Individuals)
+        {
+            Captured.push_back(std::unique_ptr<Individual>(ind->Clone(true)));
+        }
+
+        PopulationCaptured = true;
+    }
+
+
+    /// Adds or takes away (clamped by the number of tiles that are free at this
+    /// point in time) a number of tiles.
+    int Environment::CauseTileCrisis(int numTilesToAdd)
+    {
+        auto activeTiles = CountActiveTiles(false);
+        auto inactiveTiles = Map.cols * Map.rows - activeTiles;
+
+        // Clamp the number of tiles to add.
+        numTilesToAdd = std::min(inactiveTiles, std::max(numTilesToAdd, -activeTiles));
+
+        GenerateRandomFood(numTilesToAdd);
+
+        return numTilesToAdd;
+    }
+
+
+    /// Returns the number of active tiles in the map.
+    /// If includeBoundBalance is true, it also adds the number of "tiles" 
+    /// bound to the population.
+    int Environment::CountActiveTiles(bool includeBoundBalance) const
     {
         int count = 0;
         for (auto i = 0; i < Map.cols; ++i)
@@ -34,9 +68,12 @@ namespace ABME
             }
         }
 
-        for (auto& ind : Individuals)
+        if (includeBoundBalance)
         {
-            count += ind->Balance;
+            for (auto& ind : Individuals)
+            {
+                count += ind->Balance;
+            }
         }
 
         return count;
@@ -106,6 +143,17 @@ namespace ABME
     void Environment::RegisterFoodAddition(int numTiles)
     {
         NumFoodCellsToAdd += numTiles;
+    }
+
+
+    void Environment::ReleasePopulation()
+    {
+        // Copy the captured population onto the vector of individuals,
+        // but maintain the list for future releases.
+        for (auto& ind : Captured)
+        {
+            Individuals.push_back(std::unique_ptr<Individual>(ind->Clone(true)));
+        }
     }
 
 
@@ -244,6 +292,11 @@ namespace ABME
                 std::cout << "[" << it->second << "] " << it->first.first << ":" << it->first.second << std::endl;
             }
             std::cout << std::endl;
+
+            if (Captured.size() > 0)
+            {
+                std::cout << "\nPopulation captured. Press r to release.\n";
+            }
 
             born = 0;
             killed = 0;
