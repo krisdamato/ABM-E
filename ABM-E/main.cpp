@@ -6,6 +6,7 @@
 #include "GlobalSettings.h"
 #include "Helpers.h"
 #include "Individual.h"
+#include "Logger.h"
 
 using namespace ABME;
 using namespace cv;
@@ -20,6 +21,9 @@ int main(int argc, char** argv)
     GlobalSettings::ForceEqualChromosomeReproductions = false;
     GlobalSettings::DistanceStep = 4;
 
+    // Create a logger.
+    auto& logger = Logger::Instance();
+
     // Create an environment and individuals.
     //Environment environment(512, 128);
     //environment.AddRegion(cv::Rect(0, 0, 192, 128), 0.08f);
@@ -31,7 +35,7 @@ int main(int argc, char** argv)
 
     Environment environment(512, 128);
     environment.AddRegion(cv::Rect(0, 0, 200, 128), 0.08f);
-    environment.AddRegion(cv::Rect(200, 40, 112, 20), 0.01f);
+    environment.AddRegion(cv::Rect(200, 40, 112, 20), 0.00f);
     environment.AddRegion(cv::Rect(312, 0, 200, 128), 0.08f);
 
     environment.Initialise({ {4, 1000} }, false, true);
@@ -54,6 +58,8 @@ int main(int argc, char** argv)
 
     while (running)
     {
+        std::stringstream log;
+
         environment.Update();
         if (drawEnvironment) environment.Draw(envWindowName);
         auto key = waitKey(1);
@@ -70,9 +76,13 @@ int main(int argc, char** argv)
             break;
         case 'c':
             environment.CapturePopulation();
+            log << "Captured the current population.\n";
+            Logger::Instance() << log.str();
             break;
         case 'r':
             environment.ReleasePopulation();
+            log << "Released the captured population.\n";
+            Logger::Instance() << log.str();
             break;
         case '[':
             crisisTiles -= 500;
@@ -84,7 +94,8 @@ int main(int argc, char** argv)
             break;
         case 'x':
             int numTiles = environment.CauseTileCrisis(crisisTiles);
-            std::cout << "Caused a crisis by adding " << numTiles << " tiles to the map.\n";
+            log << "Caused a crisis by adding " << numTiles << " tiles to the map.\n";
+            Logger::Instance() << log.str();
             break;
         }
     }

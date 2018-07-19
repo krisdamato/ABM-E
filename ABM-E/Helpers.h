@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <iostream>
+#include <iomanip>
 #include <opencv2/highgui.hpp>
 #include <map>
 #include <numeric>
@@ -9,6 +10,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <ctime>
 #include <vector>
 #include "GlobalSettings.h"
 
@@ -324,6 +326,18 @@ namespace ABME
             }
 
             return -1;
+        }
+
+
+        inline std::string CurrentTimeString()
+        {
+            auto t = std::time(nullptr);
+            auto tm = *std::localtime(&t);
+
+            std::ostringstream oss;
+            oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+
+            return oss.str();
         }
     }
 }

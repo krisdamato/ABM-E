@@ -8,6 +8,7 @@
 #include "Helpers.h"
 #include "Individual.h"
 #include "Interactor.h"
+#include "Logger.h"
 
 namespace ABME
 {
@@ -198,6 +199,7 @@ namespace ABME
         static int diedNaturally = 0;
 
         std::uniform_int_distribution<std::mt19937::result_type> dist(0, 2);
+        auto& logger = Logger::Instance();
 
         // Take an additive snapshot of the world + barcodes.
         Snapshot = Map.clone();
@@ -308,8 +310,10 @@ namespace ABME
 
         if (i % 100 == 0)
         {
-            std::cout.precision(3);
-            std::cout << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
+            std::setprecision(4);
+
+            std::stringstream log;
+            log << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
             std::map<int, int> genePool;
             
             float averageAge = 0.f;
@@ -323,12 +327,12 @@ namespace ABME
             float averageLength = 0.f;
             for (auto&[length, count] : genePool)
             {
-                std::cout << "Chromosome length " << length << ": " << count << " individuals.\n";
+                log << "Chromosome length " << length << ": " << count << " individuals.\n";
                 averageLength += length * count;
             }
             if (Individuals.size() > 0) averageLength /= Individuals.size();
-            std::cout << "\nAvg. chromosome length: " << averageLength << std::endl;
-            std::cout << "\nAvg. age: " << averageAge << std::endl;
+            log << "\nAvg. chromosome length: " << averageLength << std::endl;
+            log << "\nAvg. age: " << averageAge << std::endl;
 
             // Report most popular chromosome.
             std::vector<Chromosome> chromosomes;
@@ -338,26 +342,29 @@ namespace ABME
             std::pair<Chromosome, int> chrTypeCount = Helpers::MostPopularChromosome(chromosomes, true);
             auto geneCountSet = Helpers::GeneStatistics(chromosomes);
 
-            std::cout << "\nMost common chromosome type [" << chrTypeCount.second << "]: \n";
-            std::cout << Helpers::ConvertChromosomeToString(chrTypeCount.first, true) << std::endl;
-            std::cout << "Most common chromosome [" << chrCount.second << "]: \n";
-            std::cout << Helpers::ConvertChromosomeToString(chrCount.first, false) << std::endl;
-            std::cout << "Most common genes:\n";
+            log << "\nMost common chromosome type [" << chrTypeCount.second << "]: \n";
+            log << Helpers::ConvertChromosomeToString(chrTypeCount.first, true) << std::endl;
+            log << "Most common chromosome [" << chrCount.second << "]: \n";
+            log << Helpers::ConvertChromosomeToString(chrCount.first, false) << std::endl;
+            log << "Most common genes:\n";
             int j = 0;
             for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 5; ++it, ++j)
             {
-                std::cout << "[" << it->second << "] " << it->first.first << ":" << it->first.second << std::endl;
+                log << "[" << it->second << "] " << it->first.first << ":" << it->first.second << std::endl;
             }
-            std::cout << std::endl;
+            log << std::endl;
 
             if (Captured.size() > 0)
             {
-                std::cout << "\nPopulation captured. Press r to release.\n";
+                log << "\nPopulation captured. Press r to release.\n";
             }
 
             born = 0;
             killed = 0;
             diedNaturally = 0;
+
+            // Log to console and output file.
+            logger << log.str();
         }
 
         // Clear colocations.
