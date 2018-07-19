@@ -33,6 +33,7 @@ namespace ABME
         static const int BarcodeSize = 16;
         static bool ForceEqualChromosomeReproductions;
         static int DistanceStep;
+        static bool AllowFreeTileMovement;
 
     protected:
         static std::vector<int> GeneIndices;

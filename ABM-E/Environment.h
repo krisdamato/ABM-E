@@ -20,6 +20,7 @@ namespace ABME
         int CauseTileCrisis(int numTilesToAdd);
         void ClampPositions(int& x, int& y) const;
         int CountActiveTiles(bool includeBoundBalance) const;
+        int CountActiveTiles(int regionIndex) const;
         void Draw(std::string& windowName) const;
         cv::Mat& GetMap();
         std::vector<cv::Rect>& GetRegions();
@@ -34,8 +35,10 @@ namespace ABME
         bool PopulationCaptured = false;
 
     protected:
-        void GenerateRandomFood(cv::Rect& region, int numTiles);
+        void GenerateRandomTiles(cv::Rect& region, int numTiles);
+        void GenerateRandomTiles(int numTiles);
         void BurnBarcode(cv::Mat& map, Individual& individual);
+        void ReplenishTiles();
 
         ColocationMapType Colocations;
         cv::Mat Map;

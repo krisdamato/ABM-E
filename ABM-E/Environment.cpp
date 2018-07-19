@@ -77,12 +77,9 @@ namespace ABME
     int Environment::CountActiveTiles(bool includeBoundBalance) const
     {
         int count = 0;
-        for (auto i = 0; i < Map.cols; ++i)
+        for (auto i = 0; i < Regions.size(); ++i)
         {
-            for (auto j = 0; j < Map.rows; ++j)
-            {
-                if (Map.at<uchar>(j, i) == 255) ++count;
-            }
+            count += CountActiveTiles(i);
         }
 
         if (includeBoundBalance)
@@ -90,6 +87,24 @@ namespace ABME
             for (auto& ind : Individuals)
             {
                 for (auto b : ind->Balances) count += b;
+            }
+        }
+
+        return count;
+    }
+
+
+    /// Only counts the active tiles in a region.
+    int Environment::CountActiveTiles(int regionIndex) const
+    {
+        int count = 0;
+        auto& region = Regions[regionIndex];
+
+        for (auto i = region.x; i < region.x + region.width; ++i)
+        {
+            for (auto j = region.y; j < region.y + region.height; ++j)
+            {
+                if (Map.at<uchar>(j, i) == 255) ++count;
             }
         }
 
@@ -198,7 +213,7 @@ namespace ABME
         static int killed = 0;
         static int diedNaturally = 0;
 
-        std::uniform_int_distribution<std::mt19937::result_type> dist(0, 2);
+        std::uniform_int_distribution<std::mt19937::result_type> dist(0, 2 * GlobalSettings::DistanceStep);
         auto& logger = Logger::Instance();
 
         // Take an additive snapshot of the world + barcodes.
@@ -214,14 +229,14 @@ namespace ABME
             individual->Update(Map, Snapshot, Colocations, Regions);
             
             // Add random ("Brownian") motion.
-            int newX = individual->X + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
-            int newY = individual->Y + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+            int newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
+            int newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
             ClampPositions(newX, newY);
 
             while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
             {
-                newX = individual->X + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
-                newY = individual->Y + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+                newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
+                newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
                 ClampPositions(newX, newY);
             }
 
@@ -261,20 +276,18 @@ namespace ABME
                 auto newIndividuals = Interactor::Interact(colocated);
                 if (newIndividuals.size() > 0)
                 {
-                    std::uniform_int_distribution<std::mt19937::result_type> distPos(0, 8);
-
                     // Add the individuals to our list.
                     born += newIndividuals.size();
                     for (auto& individual : newIndividuals)
                     { 
-                        int newX = individual->X + GlobalSettings::DistanceStep * ((int)distPos(GlobalSettings::RNG) - 4);
-                        int newY = individual->Y + GlobalSettings::DistanceStep * ((int)distPos(GlobalSettings::RNG) - 4);
+                        int newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
+                        int newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
                         ClampPositions(newX, newY);
 
                         while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
                         {
-                            newX = individual->X + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
-                            newY = individual->Y + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+                            newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
+                            newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
                             ClampPositions(newX, newY);
                         }
 
@@ -301,12 +314,7 @@ namespace ABME
             }
         }
 
-        // Generate missing food tiles from dead individuals.
-        for (auto i = 0; i < NumActiveTilesToAdd.size(); ++i)
-        {
-            GenerateRandomFood(Regions[i], NumActiveTilesToAdd[i]);
-            NumActiveTilesToAdd[i] = 0;
-        }
+        ReplenishTiles();
 
         if (i % 100 == 0)
         {
@@ -385,7 +393,7 @@ namespace ABME
 
         for (auto i = 0; i < Regions.size(); ++i)
         {
-            GenerateRandomFood(Regions[i], InitialRegionActiveTiles[i]);
+            GenerateRandomTiles(Regions[i], InitialRegionActiveTiles[i]);
         }
     }
 
@@ -393,7 +401,7 @@ namespace ABME
     /// Generates (or removes) a specific number of foot tiles, depending
     /// on the sign of the argument.
     /// Warning! This will hang the application if it does not find an empty/food tile.
-    void Environment::GenerateRandomFood(cv::Rect& region, int numTilesToAdd)
+    void Environment::GenerateRandomTiles(cv::Rect& region, int numTilesToAdd)
     {
         std::uniform_int_distribution<std::mt19937::result_type> distWidth(region.x, region.x + region.width - 1);
         std::uniform_int_distribution<std::mt19937::result_type> distHeight(region.y, region.y + region.height - 1);
@@ -423,6 +431,39 @@ namespace ABME
         }
     }
 
+    
+    /// Generates tiles randomly all over the map (within regions only).
+    void Environment::GenerateRandomTiles(int numTilesToAdd)
+    {
+        std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - 1);
+        std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - 1);
+
+        while (numTilesToAdd > 0)
+        {
+            auto x = distWidth(GlobalSettings::RNG);
+            auto y = distHeight(GlobalSettings::RNG);
+            auto& tile = Map.at<uchar>(y, x);
+
+            if (tile == 255 || !Helpers::PointInsideRects(Point(x, y), Regions)) continue;
+            else tile = 255;
+
+            --numTilesToAdd;
+        }
+
+        while (numTilesToAdd < 0)
+        {
+            auto x = distWidth(GlobalSettings::RNG);
+            auto y = distHeight(GlobalSettings::RNG);
+            auto& tile = Map.at<uchar>(y, x);
+
+            if (tile == 0 || !Helpers::PointInsideRects(Point(x, y), Regions)) continue;
+            else tile = 0;
+
+            ++numTilesToAdd;
+        }
+    }
+
+
     void Environment::BurnBarcode(Mat& map, Individual& individual)
     {
         auto& barcode = individual.GetBarcodeString();
@@ -434,6 +475,33 @@ namespace ABME
                 int x = individual.X + (i % GlobalSettings::BarcodeSize);
                 int y = individual.Y + (i / GlobalSettings::BarcodeSize);
                 map.at<uchar>(y, x) = 255;
+            }
+        }
+    }
+
+
+    void Environment::ReplenishTiles()
+    {
+        if (GlobalSettings::AllowFreeTileMovement)
+        {
+            auto count = 0;
+
+            // Sum all additions together.
+            for (auto& c : NumActiveTilesToAdd)
+            {
+                count += c;
+                c = 0;
+            }
+
+            GenerateRandomTiles(count);
+        }
+        else
+        {
+            // Generate missing food tiles from dead individuals.
+            for (auto i = 0; i < NumActiveTilesToAdd.size(); ++i)
+            {
+                GenerateRandomTiles(Regions[i], NumActiveTilesToAdd[i]);
+                NumActiveTilesToAdd[i] = 0;
             }
         }
     }

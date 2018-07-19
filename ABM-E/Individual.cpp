@@ -133,8 +133,8 @@ namespace ABME
         }
 
         // Compute movement and collisions.
-        int newX = X + movement[0] * GlobalSettings::DistanceStep;
-        int newY = Y + movement[1] * GlobalSettings::DistanceStep;
+        int newX = X + GlobalSettings::DistanceStep * (movement[0] / GlobalSettings::DistanceStep);
+        int newY = Y + GlobalSettings::DistanceStep * (movement[1] / GlobalSettings::DistanceStep);
         ItsEnvironment.ClampPositions(newX, newY);
 
         const auto greaterMovement = std::max(std::abs(movement[0]), std::abs(movement[1]));
@@ -146,8 +146,8 @@ namespace ABME
                 if (!DetectCollision(thisRect, offLimitRegions)) break;
 
                 --i;
-                newX = X + int(i * (float(movement[0]) / greaterMovement) * GlobalSettings::DistanceStep);
-                newY = Y + int(i * (float(movement[1]) / greaterMovement) * GlobalSettings::DistanceStep);
+                newX = X + GlobalSettings::DistanceStep * (int(i * (float(movement[0]) / greaterMovement) / GlobalSettings::DistanceStep));
+                newY = Y + GlobalSettings::DistanceStep * (int(i * (float(movement[1]) / greaterMovement) / GlobalSettings::DistanceStep));
                 ItsEnvironment.ClampPositions(newX, newY);
             }
         }

@@ -15,6 +15,7 @@ namespace ABME
     int GlobalSettings::NumThreads = 1;
     bool GlobalSettings::ForceEqualChromosomeReproductions = false;
     int GlobalSettings::DistanceStep = 1;
+    bool GlobalSettings::AllowFreeTileMovement = false;
 
 
     void GlobalSettings::Initialise(int numThreads)

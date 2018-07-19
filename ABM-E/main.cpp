@@ -20,6 +20,7 @@ int main(int argc, char** argv)
     GlobalSettings::Initialise(numThreads);
     GlobalSettings::ForceEqualChromosomeReproductions = false;
     GlobalSettings::DistanceStep = 4;
+    GlobalSettings::AllowFreeTileMovement = true;
 
     // Create a logger.
     auto& logger = Logger::Instance();
@@ -33,10 +34,10 @@ int main(int argc, char** argv)
     //Environment environment(128, 128);
     //environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.08f);
 
-    Environment environment(512, 128);
-    environment.AddRegion(cv::Rect(0, 0, 200, 128), 0.08f);
-    environment.AddRegion(cv::Rect(200, 40, 112, 20), 0.00f);
-    environment.AddRegion(cv::Rect(312, 0, 200, 128), 0.08f);
+    Environment environment(300, 128);
+    environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
+    environment.AddRegion(cv::Rect(120, 60, 60, 20), 0.00f);
+    environment.AddRegion(cv::Rect(180, 0, 120, 128), 0.05f);
 
     environment.Initialise({ {4, 1000} }, false, true);
 
