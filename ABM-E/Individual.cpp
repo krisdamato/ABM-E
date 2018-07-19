@@ -11,6 +11,7 @@ namespace ABME
     Individual::Individual(Environment& environment, Chromosome chromosome) : ItsEnvironment(environment), ItsChromosome(chromosome)
     {
         CurrentBarcode = std::make_unique<Barcode>(ItsChromosome, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+        Balances = std::vector<int>(ItsEnvironment.GetRegions().size());
     }
 
 
@@ -26,30 +27,29 @@ namespace ABME
     }
 
 
-    bool Individual::AddDropFood(cv::Mat& environment, int numToTake)
+    bool Individual::AddDropTile(cv::Mat& environment, int numToTake)
     {
         // If it's a "sink"...
         if (numToTake > 0)
         {
-            CurrentBarcode->ExtractTiles(environment, X, Y, numToTake);
+            CurrentBarcode->ExtractTiles(environment, X, Y, numToTake, ItsEnvironment.GetRegions(), Balances);
             if (numToTake > 0) return false;
         }
         // Or if it's a "source"...
         else if (numToTake < 0)
         {
             // Return "food" tiles to the environment.
-            CurrentBarcode->DropTiles(environment, X, Y, numToTake, true);
-            if (numToTake < 0) ItsEnvironment.RegisterFoodAddition(-numToTake);
+            CurrentBarcode->DropTiles(environment, X, Y, numToTake, ItsEnvironment.GetRegions(), Balances, true);
         }
 
         return true;
     }
 
+
     bool Individual::BeBorn()
     {
-        if (AddDropFood(ItsEnvironment.GetMap(), 1))
+        if (AddDropTile(ItsEnvironment.GetMap(), 1))
         {
-            ++Balance;
             return true;
         }
 
@@ -70,9 +70,25 @@ namespace ABME
         // Only copy balance if required. When capturing populations,
         // for instance, balance is best kept 0 so that the overall tile
         // number does not change.
-        individual->Balance = ignoreBalance ? 0 : Balance;
+        individual->Balances = ignoreBalance ? std::vector<int>() : Balances;
 
         return individual;
+    }
+
+
+    /// Detects whether any of the points of this individual
+    /// overlaps with any of the unallowed regions.
+    bool Individual::DetectCollision(const cv::Rect& thisRect, std::vector<cv::Rect>& regions)
+    {
+        const auto area = thisRect.area();
+        auto runningArea = 0;
+        for (auto& r : regions)
+        {
+            runningArea += (thisRect & r).area();
+            if (runningArea == area) return false;
+        }
+
+        return true;
     }
 
 
@@ -82,39 +98,17 @@ namespace ABME
     }
 
 
-    int Individual::InteractWithEnvironment(std::string& representation)
-    {
-        // Count current active cells.
-        auto before = 0;
-        for (uchar c : representation)
-        {
-            if (c == '1') ++before;
-        }
-
-        // Apply ruleset to region.
-        std::string output(representation.size(), '0');
-        CurrentBarcode->UpdateStringRepresentation(representation, output);
-
-        // Count post-update active cells.
-        auto after = 0;
-        for (uchar c : output)
-        {
-            if (c == '1') ++after;
-        }
-
-        return after - before;
-    }
-
-
     void Individual::Kill()
     {
         Alive = false;
-        if (Balance > 0) AddDropFood(ItsEnvironment.GetMap(), -Balance);
-        else ItsEnvironment.RegisterFoodAddition(Balance);
+        for (int i = 0; i < Balances.size(); ++i)
+        {
+            ItsEnvironment.RegisterActiveTileAddition(i, Balances[i]);
+        }
     }
 
 
-    void Individual::Update(Mat& baseEnvironment, Mat& interactableEnvironment, Environment::ColocationMapType& colocations)
+    void Individual::Update(Mat& baseEnvironment, Mat& interactableEnvironment, Environment::ColocationMapType& colocations, std::vector<cv::Rect>& offLimitRegions)
     {
         // Integrate environmental input.
         auto interactionRegion = interactableEnvironment(Rect(X, Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize));
@@ -131,31 +125,43 @@ namespace ABME
         // Leave or extract some "food".
         auto representation = Helpers::ConvertMatToString(baseRegion);
         int difference = cellsActive - LastCellsActive;
-        bool foundFood = true;
+        bool foundTile = true;
         
         if (difference != 0)
         {
-            foundFood = AddDropFood(baseEnvironment, difference > 0 ? 1 : -1);
-
-            // Update consumption balance.
-            if (foundFood)
-            {
-                Balance = difference > 0 ? Balance + 1 : Balance - 1;
-            }
+            foundTile = AddDropTile(baseEnvironment, difference > 0 ? 1 : -1);
         }
 
+        // Compute movement and collisions.
+        int newX = X + movement[0] * GlobalSettings::DistanceStep;
+        int newY = Y + movement[1] * GlobalSettings::DistanceStep;
+        ItsEnvironment.ClampPositions(newX, newY);
+
+        const auto greaterMovement = std::max(std::abs(movement[0]), std::abs(movement[1]));
+        if (greaterMovement > 0)
+        {
+            for (auto i = greaterMovement; i > 0;)
+            {
+                auto thisRect = cv::Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+                if (!DetectCollision(thisRect, offLimitRegions)) break;
+
+                --i;
+                newX = X + int(i * (float(movement[0]) / greaterMovement) * GlobalSettings::DistanceStep);
+                newY = Y + int(i * (float(movement[1]) / greaterMovement) * GlobalSettings::DistanceStep);
+                ItsEnvironment.ClampPositions(newX, newY);
+            }
+        }
+        
         // Perform movement.
-        X += movement[0];
-        Y += movement[1];
-        X = std::max(0, std::min(interactableEnvironment.cols - GlobalSettings::BarcodeSize, X));
-        Y = std::max(0, std::min(interactableEnvironment.rows - GlobalSettings::BarcodeSize, Y));
+        X = newX;
+        Y = newY;
 
         // Only update food if we couldn't extract or deposit new tiles.
         LastCellsActive = cellsActive;
 
         // Update live status.
         // An individual dies if it has no food or all or no cell is active.
-        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundFood)
+        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTile)
         {
             Kill();
             return;

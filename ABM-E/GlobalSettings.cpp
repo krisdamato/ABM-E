@@ -13,6 +13,8 @@ namespace ABME
     std::vector<int> GlobalSettings::BarcodeRandoms;
     int GlobalSettings::NextRandomIndex = 0;
     int GlobalSettings::NumThreads = 1;
+    bool GlobalSettings::ForceEqualChromosomeReproductions = false;
+    int GlobalSettings::DistanceStep = 1;
 
 
     void GlobalSettings::Initialise(int numThreads)

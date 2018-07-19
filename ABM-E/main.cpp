@@ -17,10 +17,24 @@ int main(int argc, char** argv)
 
     // Initialise global parameters.
     GlobalSettings::Initialise(numThreads);
+    GlobalSettings::ForceEqualChromosomeReproductions = false;
+    GlobalSettings::DistanceStep = 4;
 
     // Create an environment and individuals.
-    Environment environment(128, 128, 0.04f);
-    environment.Initialise({ {4, 250} }, false, true);
+    //Environment environment(512, 128);
+    //environment.AddRegion(cv::Rect(0, 0, 192, 128), 0.08f);
+    //environment.AddRegion(cv::Rect(320, 0, 192, 128), 0.04f);
+    //environment.AddRegion(cv::Rect(192, 56, 128, 16), 0.01f);
+    
+    //Environment environment(128, 128);
+    //environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.08f);
+
+    Environment environment(512, 128);
+    environment.AddRegion(cv::Rect(0, 0, 200, 128), 0.08f);
+    environment.AddRegion(cv::Rect(200, 40, 112, 20), 0.01f);
+    environment.AddRegion(cv::Rect(312, 0, 200, 128), 0.08f);
+
+    environment.Initialise({ {4, 1000} }, false, true);
 
     // Get first individual.
     auto& individual = environment[0];
@@ -49,7 +63,7 @@ int main(int argc, char** argv)
             drawEnvironment = !drawEnvironment;
             break;
         case 'f':
-            std::cout << "Num. food cells: " << environment.CountActiveTiles(true) << std::endl;
+            std::cout << "Num. active tiles: " << environment.CountActiveTiles(true) << std::endl;
             break;
         case 'q': 
             running = false;

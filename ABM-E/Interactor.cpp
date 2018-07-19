@@ -56,6 +56,9 @@ namespace ABME
         if (firstCount == 0) first.Kill();
         if (secondCount == 0) second.Kill();
 
+        // If chromosomes have to be equal length, check to make sure.
+        if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsChromosome.size() != second.ItsChromosome.size()) return nullptr;
+
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
         if (firstCount > 0 && secondCount > 0)

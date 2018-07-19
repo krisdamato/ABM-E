@@ -303,5 +303,27 @@ namespace ABME
 
             return chrString.str();
         }
+
+
+        inline bool PointInsideRects(const cv::Point& point, std::vector<cv::Rect>& rects)
+        {
+            for (auto& rect : rects)
+            {
+                if (point.inside(rect)) return true;
+            }
+
+            return false;
+        }
+
+
+        inline int PointInRegionIndex(const cv::Point& point, std::vector<cv::Rect>& rects)
+        {
+            for (int i = 0; i < rects.size(); ++i)
+            {
+                if (point.inside(rects[i])) return i;
+            }
+
+            return -1;
+        }
     }
 }

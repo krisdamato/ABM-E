@@ -15,8 +15,8 @@ namespace ABME
         void ComputeMetrics(cv::Vec2i& movement, int& cellsActive) const;
         int CountLiveCells() const;
         void Draw(std::string& windowName) const;
-        void DropTiles(cv::Mat& environment, int x, int y, int& numFoodTiles, bool useActiveCells) const;
-        void ExtractTiles(cv::Mat& environment, int x, int y, int& numFoodTiles) const;
+        void DropTiles(cv::Mat& environment, int x, int y, int& numFoodTiles, std::vector<cv::Rect>& regions, std::vector<int>& balances, bool useActiveCells) const;
+        void ExtractTiles(cv::Mat& environment, int x, int y, int& numFoodTiles, std::vector<cv::Rect>& regions, std::vector<int>& balances) const;
         const std::string& GetStringRepresentation() const;
         void Input(cv::Mat& environment);
         void Intersect(const Barcode& rhs);

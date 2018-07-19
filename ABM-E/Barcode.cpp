@@ -137,7 +137,7 @@ namespace ABME
 
     /// Randomly adds food tiles to the environment.
     /// Note: numToTake must be negative here.
-    void Barcode::DropTiles(cv::Mat& environment, int x, int y, int& numToTake, bool useActiveCells) const
+    void Barcode::DropTiles(cv::Mat& environment, int x, int y, int& numToTake, std::vector<Rect>& regions, std::vector<int>& balances, bool useActiveCells) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
@@ -153,14 +153,22 @@ namespace ABME
         // Pick spots to deposit.
         for (auto i : relativeIndices)
         {
-            environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize) = 255;
+            auto tileX = x + i % GlobalSettings::BarcodeSize;
+            auto tileY = y + i / GlobalSettings::BarcodeSize;
+
+            // Update region balance.
+            auto index = Helpers::PointInRegionIndex(Point(tileX, tileY), regions);
+            --balances[index];
+
+            // Activate tile.
+            environment.at<uchar>(tileY, tileX) = 255;
             ++numToTake;
             if (numToTake >= 0) break;
         }
     }
 
 
-    void Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int& numToTake) const
+    void Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int& numToTake, std::vector<Rect>& regions, std::vector<int>& balances) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
@@ -175,7 +183,15 @@ namespace ABME
         // Pick spots to extract from.
         for (auto i : relativeIndices)
         {
-            environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize) = 0;
+            auto tileX = x + i % GlobalSettings::BarcodeSize;
+            auto tileY = y + i / GlobalSettings::BarcodeSize;
+
+            // Update region balance.
+            auto index = Helpers::PointInRegionIndex(Point(tileX, tileY), regions);
+            ++balances[index];
+
+            // Deactivate tile.
+            environment.at<uchar>(tileY, tileX) = 0;
             --numToTake;
             if (numToTake <= 0) break;
         }

@@ -13,13 +13,20 @@ namespace ABME
 {
     using namespace cv;
 
-    Environment::Environment(int width, int height, float probFood) : Map(height, width, CV_8UC1)
+    Environment::Environment(int width, int height) : Map(height, width, CV_8UC1)
     {
+        Map = Scalar(0);
+
         // Seed RNG.
         auto randomDevice = std::random_device();
+    }
 
-        // Generate a map with "food" tiles.
-        GenerateRandomFood(probFood);
+
+    void Environment::AddRegion(cv::Rect region, float probability)
+    {
+        Regions.push_back(region);
+        InitialRegionActiveTiles.push_back(probability * region.area());
+        NumActiveTilesToAdd.push_back(0);
     }
 
 
@@ -40,17 +47,26 @@ namespace ABME
 
     /// Adds or takes away (clamped by the number of tiles that are free at this
     /// point in time) a number of tiles.
+    // TODO: Needs fixing.
     int Environment::CauseTileCrisis(int numTilesToAdd)
     {
-        auto activeTiles = CountActiveTiles(false);
-        auto inactiveTiles = Map.cols * Map.rows - activeTiles;
+        //auto activeTiles = CountActiveTiles(false);
+        //auto inactiveTiles = Map.cols * Map.rows - activeTiles;
 
-        // Clamp the number of tiles to add.
-        numTilesToAdd = std::min(inactiveTiles, std::max(numTilesToAdd, -activeTiles));
+        //// Clamp the number of tiles to add.
+        //numTilesToAdd = std::min(inactiveTiles, std::max(numTilesToAdd, -activeTiles));
 
-        GenerateRandomFood(numTilesToAdd);
+        //GenerateRandomFood(numTilesToAdd);
 
         return numTilesToAdd;
+    }
+
+
+    /// Clamps positions to environment maximum dimensions (and barcode margin).
+    void Environment::ClampPositions(int& x, int& y) const
+    {
+        x = std::max(0, std::min(Map.cols - GlobalSettings::BarcodeSize, x));
+        y = std::max(0, std::min(Map.rows - GlobalSettings::BarcodeSize, y));
     }
 
 
@@ -72,7 +88,7 @@ namespace ABME
         {
             for (auto& ind : Individuals)
             {
-                count += ind->Balance;
+                for (auto b : ind->Balances) count += b;
             }
         }
 
@@ -112,6 +128,12 @@ namespace ABME
     }
 
 
+    std::vector<Rect>& Environment::GetRegions()
+    {
+        return Regions;
+    }
+
+
     void Environment::Initialise(std::map<int, int> lengthCounts, bool useSameGeneIndices, bool useSimpleGenesFirst)
     {
         std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - GlobalSettings::BarcodeSize);
@@ -133,16 +155,27 @@ namespace ABME
         // environment.
         for (auto& individual : Individuals)
         {
-            individual->X = distWidth(GlobalSettings::RNG);
-            individual->Y = distHeight(GlobalSettings::RNG);
-            individual->Balance++;
+            auto newX = GlobalSettings::DistanceStep * (distWidth(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+            auto newY = GlobalSettings::DistanceStep * (distHeight(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+
+            while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
+            {
+                newX = GlobalSettings::DistanceStep * (distWidth(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+                newY = GlobalSettings::DistanceStep * (distHeight(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+            }
+
+            individual->X = newX;
+            individual->Y = newY;
         }
+
+        // Initialise active tiles.
+        InitialiseTiles();
     }
 
 
-    void Environment::RegisterFoodAddition(int numTiles)
+    void Environment::RegisterActiveTileAddition(int regionIndex, int numTiles)
     {
-        NumFoodCellsToAdd += numTiles;
+        NumActiveTilesToAdd[regionIndex] += numTiles;
     }
 
 
@@ -176,14 +209,22 @@ namespace ABME
         // Update all individuals.
         for (auto& individual : Individuals)
         {
-            individual->Update(Map, Snapshot, Colocations);
+            individual->Update(Map, Snapshot, Colocations, Regions);
             
             // Add random ("Brownian") motion.
-            individual->X += dist(GlobalSettings::RNG) - 1;
-            individual->Y += dist(GlobalSettings::RNG) - 1;
+            int newX = individual->X + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+            int newY = individual->Y + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+            ClampPositions(newX, newY);
 
-            individual->X = std::max(0, std::min(individual->X, Map.cols - GlobalSettings::BarcodeSize));
-            individual->Y = std::max(0, std::min(individual->Y, Map.rows - GlobalSettings::BarcodeSize));
+            while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
+            {
+                newX = individual->X + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+                newY = individual->Y + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+                ClampPositions(newX, newY);
+            }
+
+            individual->X = newX;
+            individual->Y = newY;
         }
 
         // Remove dead individuals.
@@ -224,11 +265,19 @@ namespace ABME
                     born += newIndividuals.size();
                     for (auto& individual : newIndividuals)
                     { 
-                        individual->X += distPos(GlobalSettings::RNG) - 4;
-                        individual->Y += distPos(GlobalSettings::RNG) - 4;
+                        int newX = individual->X + GlobalSettings::DistanceStep * ((int)distPos(GlobalSettings::RNG) - 4);
+                        int newY = individual->Y + GlobalSettings::DistanceStep * ((int)distPos(GlobalSettings::RNG) - 4);
+                        ClampPositions(newX, newY);
 
-                        individual->X = std::max(0, std::min(individual->X, Map.cols - GlobalSettings::BarcodeSize));
-                        individual->Y = std::max(0, std::min(individual->Y, Map.rows - GlobalSettings::BarcodeSize));
+                        while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
+                        {
+                            newX = individual->X + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+                            newY = individual->Y + GlobalSettings::DistanceStep * ((int)dist(GlobalSettings::RNG) - 1);
+                            ClampPositions(newX, newY);
+                        }
+
+                        individual->X = newX;
+                        individual->Y = newY;
 
                         Individuals.push_back(std::unique_ptr<Individual>(individual));
                     }
@@ -251,18 +300,25 @@ namespace ABME
         }
 
         // Generate missing food tiles from dead individuals.
-        GenerateRandomFood(NumFoodCellsToAdd);
-        NumFoodCellsToAdd = 0;
+        for (auto i = 0; i < NumActiveTilesToAdd.size(); ++i)
+        {
+            GenerateRandomFood(Regions[i], NumActiveTilesToAdd[i]);
+            NumActiveTilesToAdd[i] = 0;
+        }
 
         if (i % 100 == 0)
         {
             std::cout.precision(3);
             std::cout << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
             std::map<int, int> genePool;
+            
+            float averageAge = 0.f;
             for (auto& individual : Individuals)
             {
                 genePool[individual->ItsChromosome.size()]++;
+                averageAge += individual->Age;
             }
+            averageAge /= Individuals.size();
 
             float averageLength = 0.f;
             for (auto&[length, count] : genePool)
@@ -272,6 +328,7 @@ namespace ABME
             }
             if (Individuals.size() > 0) averageLength /= Individuals.size();
             std::cout << "\nAvg. chromosome length: " << averageLength << std::endl;
+            std::cout << "\nAvg. age: " << averageAge << std::endl;
 
             // Report most popular chromosome.
             std::vector<Chromosome> chromosomes;
@@ -315,17 +372,13 @@ namespace ABME
     }
 
 
-    void Environment::GenerateRandomFood(float probFood)
+    void Environment::InitialiseTiles()
     {
         std::uniform_real_distribution<> dist(0.0, 1.0);
 
-        // Generate random "food" tiles.
-        for (auto i = 0; i < Map.cols; ++i)
+        for (auto i = 0; i < Regions.size(); ++i)
         {
-            for (auto j = 0; j < Map.rows; ++j)
-            {
-                Map.at<uchar>(j, i) = (dist(GlobalSettings::RNG) < probFood) ? 255 : 0;
-            }
+            GenerateRandomFood(Regions[i], InitialRegionActiveTiles[i]);
         }
     }
 
@@ -333,10 +386,10 @@ namespace ABME
     /// Generates (or removes) a specific number of foot tiles, depending
     /// on the sign of the argument.
     /// Warning! This will hang the application if it does not find an empty/food tile.
-    void Environment::GenerateRandomFood(int numTilesToAdd)
+    void Environment::GenerateRandomFood(cv::Rect& region, int numTilesToAdd)
     {
-        std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - 1);
-        std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - 1);
+        std::uniform_int_distribution<std::mt19937::result_type> distWidth(region.x, region.x + region.width - 1);
+        std::uniform_int_distribution<std::mt19937::result_type> distHeight(region.y, region.y + region.height - 1);
 
         while (numTilesToAdd > 0)
         {
