@@ -46,17 +46,16 @@ int main(int argc, char** argv)
 
     std::cout << "Starting [" << numThreads << " threads]\n";
     
-    std::string envWindowName = "ABME - Environment";
-    namedWindow(envWindowName, WINDOW_AUTOSIZE);
-    
-    std::string indWindowName = "ABME - Barcode";
-
     clock_t begin = clock();
 
     bool running = true;
-    bool drawEnvironment = true;
+    bool drawEnvironment = false;
     int crisisTiles = 0;
-
+    
+    std::string envWindowName = "ABME - Environment";
+    
+    if (drawEnvironment) namedWindow(envWindowName, WINDOW_AUTOSIZE);
+    
     while (running)
     {
         std::stringstream log;
