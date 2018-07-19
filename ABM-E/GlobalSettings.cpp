@@ -1,5 +1,6 @@
 #include "GlobalSettings.h"
 
+#include <algorithm>
 #include <numeric>
 #include <omp.h>
 

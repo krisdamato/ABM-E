@@ -18,7 +18,7 @@ namespace ABME
         LogFile.open(filename);
         if (!LogFile)
         {
-            throw std::exception("Log file couldn't be opened.");
+            throw std::runtime_error("Log file couldn't be opened.");
         }
     }
 

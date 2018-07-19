@@ -19,10 +19,10 @@ namespace ABME
     using Gene = std::pair<int, uchar>;
     using Chromosome = std::map<int, uchar>;
 
-    class BadGeneIndexException: std::exception
+    class BadGeneIndexException: std::runtime_error
     {
     public:
-        BadGeneIndexException(std::string message = "Bad gene index was passed.") : exception(message.c_str())
+        BadGeneIndexException(std::string message = "Bad gene index was passed.") : runtime_error(message.c_str())
         {
 
         }
