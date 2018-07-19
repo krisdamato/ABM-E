@@ -1,0 +1,1 @@
+g++ -fopenmp -O3 -std=c++17 -I/usr/local/include/ -L/usr/local/lib/ -o abme ABM-E/*.cpp -lopencv_core -lopencv_imgproc -lopencv_highgui
