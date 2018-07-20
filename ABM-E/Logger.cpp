@@ -14,12 +14,13 @@ namespace ABME
         std::string today = Helpers::CurrentTimeString();
 
         // Create a file with that name and open.
-        auto filename = "/home/ABM-E/logs/Log_" + today + ".txt";
-        LogFile.open(filename);
+        Filename = "/home/ABM-E/logs/Log_" + today + ".txt";
+        LogFile.open(Filename);
         if (!LogFile)
         {
             throw std::runtime_error("Log file couldn't be opened.");
         }
+	LogFile.close();
     }
 
 
@@ -31,11 +32,15 @@ namespace ABME
 
     void Logger::operator<<(const std::string& log)
     {
+	LogFile.open(Filename, std::ios_base::app);
+
         // Output to screen.
         std::cout << log;
 
         // Log to file.
         LogFile << log;
+
+	LogFile.close();
     }
 
 

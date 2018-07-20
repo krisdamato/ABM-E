@@ -19,5 +19,6 @@ namespace ABME
     private:
         static std::unique_ptr<Logger> _instance;
         std::ofstream LogFile;
+	std::string Filename;
     };
 }
