@@ -27,7 +27,7 @@ def process_logfile(filename):
     ax[1].plot(num_inds)
     ax[2].plot(ages)
 
-    ax[0].set_xlabel("Iteration Number (x100)")
+    ax[2].set_xlabel("Iteration Number (x100)")
     ax[0].set_ylabel("Avg. chr. length")
     ax[1].set_ylabel("Num. individuals")
     ax[2].set_ylabel("Avg. age")
