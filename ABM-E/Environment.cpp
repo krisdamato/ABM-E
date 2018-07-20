@@ -48,16 +48,21 @@ namespace ABME
 
     /// Adds or takes away (clamped by the number of tiles that are free at this
     /// point in time) a number of tiles.
-    // TODO: Needs fixing.
     int Environment::CauseTileCrisis(int numTilesToAdd)
     {
-        //auto activeTiles = CountActiveTiles(false);
-        //auto inactiveTiles = Map.cols * Map.rows - activeTiles;
+        auto activeTiles = CountActiveTiles(false);
+        auto inactiveTiles = 0;
+        
+        for (auto& r : Regions)
+        {
+            inactiveTiles += r.area(); 
+        }
+        inactiveTiles -= activeTiles;
 
-        //// Clamp the number of tiles to add.
-        //numTilesToAdd = std::min(inactiveTiles, std::max(numTilesToAdd, -activeTiles));
+        // Clamp the number of tiles to add.
+        numTilesToAdd = std::min(inactiveTiles, std::max(numTilesToAdd, -activeTiles));
 
-        //GenerateRandomFood(numTilesToAdd);
+        GenerateRandomTiles(numTilesToAdd);
 
         return numTilesToAdd;
     }
