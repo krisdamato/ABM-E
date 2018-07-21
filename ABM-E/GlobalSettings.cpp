@@ -7,11 +7,7 @@
 namespace ABME
 {
     std::mt19937 GlobalSettings::RNG;
-    const double GlobalSettings::GeneFlipMutationRate = 0.1; // Per gene.
-    const double GlobalSettings::GeneticInsertionRate = 0.1; // Per reproduction.
-    const double GlobalSettings::GeneticDeletionRate = 0.1; // Per reproduction.
     std::vector<int> GlobalSettings::GeneIndices;
-    std::vector<int> GlobalSettings::BarcodeRandoms;
     int GlobalSettings::NextRandomIndex = 0;
     int GlobalSettings::NumThreads = 1;
     bool GlobalSettings::ForceEqualChromosomeReproductions = false;
@@ -19,6 +15,7 @@ namespace ABME
     bool GlobalSettings::AllowFreeTileMovement = false;
     bool GlobalSettings::TileDepositsEqualDifference = false;
     bool GlobalSettings::MutationRatesEvolve = false;
+    double GlobalSettings::BaseMetaMutationRate = 0.001;
 
 
     void GlobalSettings::Initialise(int numThreads)
@@ -37,13 +34,6 @@ namespace ABME
         std::shuffle(GeneIndices.begin(), GeneIndices.begin() + 2, GlobalSettings::RNG);
         std::shuffle(GeneIndices.begin() + 2, GeneIndices.begin() + 10, GlobalSettings::RNG);
         std::shuffle(GeneIndices.begin() + 10, GeneIndices.begin() + 522, GlobalSettings::RNG);
-
-        // Generate a lot of random numbers for use inside barcode updates.
-        std::uniform_int_distribution<std::mt19937::result_type> dist(0, BarcodeSize - 1);
-        for (auto i = 0; i < RandomsSize; ++i)
-        {
-            BarcodeRandoms.push_back(dist(RNG));
-        }
 
         // Set number of OpenMP threads.
         NumThreads = numThreads;

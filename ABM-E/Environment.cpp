@@ -371,14 +371,8 @@ namespace ABME
             std::vector<Chromosome> chromosomes;
             for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.ActiveGenes);
 
-            std::pair<Chromosome, int> chrCount = Helpers::MostPopularChromosome(chromosomes);
-            std::pair<Chromosome, int> chrTypeCount = Helpers::MostPopularChromosome(chromosomes, true);
             auto geneCountSet = Helpers::GeneStatistics(chromosomes);
 
-            log << "\nMost common chromosome type [" << chrTypeCount.second << "]: \n";
-            log << Helpers::ConvertChromosomeToString(chrTypeCount.first, true) << std::endl;
-            log << "Most common chromosome [" << chrCount.second << "]: \n";
-            log << Helpers::ConvertChromosomeToString(chrCount.first, false) << std::endl;
             log << "Most common genes:\n";
             int j = 0;
             for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 5; ++it, ++j)

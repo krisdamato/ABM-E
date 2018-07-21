@@ -26,7 +26,7 @@ namespace ABME
 
         inline double GetMetaMutationRate() const
         {
-            return double(MetaMutationRate) / 255;
+            return GlobalSettings::BaseMetaMutationRate + double(MetaMutationRate) / 255;
         }
 
 

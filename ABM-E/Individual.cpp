@@ -70,7 +70,7 @@ namespace ABME
         // Only copy balance if required. When capturing populations,
         // for instance, balance is best kept 0 so that the overall tile
         // number does not change.
-        individual->Balances = ignoreBalance ? std::vector<int>() : Balances;
+        if (!ignoreBalance) individual->Balances = Balances;
 
         return individual;
     }
@@ -142,7 +142,7 @@ namespace ABME
         CurrentBarcode->Input(interactionRegion);
 
         // Update barcode once.
-        CurrentBarcode->Update();
+        CurrentBarcode->Update(true);
 
         // Calculate movement and consumption.
         Vec2i movement; int cellsActive = 0;

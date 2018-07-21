@@ -18,6 +18,7 @@ namespace ABME
 {
     using Gene = std::pair<int, uchar>;
     using Chromosome = std::map<int, uchar>;
+    using PatternMap = std::map<std::string, int>;
 
     class BadGeneIndexException: std::runtime_error
     {
@@ -100,6 +101,18 @@ namespace ABME
             }
 
             return pattern;
+        }
+
+
+        inline PatternMap GeneratePatternMap()
+        {
+            PatternMap map;
+            for (int i = 0; i < GlobalSettings::NumGenes; ++i)
+            {
+                map[GetParentPattern(i)] = i;
+            }
+
+            return map;
         }
 
 

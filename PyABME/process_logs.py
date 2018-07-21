@@ -49,7 +49,7 @@ def process_logfile(filename):
     ax[3].plot(mrd, label="Deletion")
     ax[3].plot(mrm, label="Meta")
 
-    ax[2].set_xlabel("Iteration Number (x100)")
+    ax[3].set_xlabel("Iteration Number (x100)")
     ax[0].set_ylabel("Avg. chr. length")
     ax[1].set_ylabel("Num. individuals")
     ax[2].set_ylabel("Avg. age")
@@ -62,7 +62,7 @@ def process_logfile(filename):
     ax[1].xaxis.set_major_locator(MaxNLocator(integer=True))
     ax[2].xaxis.set_major_locator(MaxNLocator(integer=True))
     ax[3].xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax[3].legend(loc="upper center", shadow=False)
+    ax[3].legend(loc="upper right", shadow=False, prop={'size': 6})
     plt.tight_layout()
     fig.savefig("{}_plots.png".format(filename))
     plt.close()

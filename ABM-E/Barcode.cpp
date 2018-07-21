@@ -9,6 +9,9 @@ namespace ABME
 {
     using namespace cv;
 
+    PatternMap Barcode::GenePatternMap = Helpers::GeneratePatternMap();
+
+
     Barcode::Barcode(Chromosome& chromosome, int width, int height) : chromosome(chromosome), width(width), height(height)
     {
         // Create a string to represent the barcode with the proper length.
@@ -222,29 +225,31 @@ namespace ABME
     
     /// Updates the barcode pattern by one step.
     /// Note: only allows up to 3x3 patterns.
-    void Barcode::Update()
+    void Barcode::Update(bool usePatternMap)
     {
         auto oldBarcode = barcode;
 
-        for (auto&[key, val] : chromosome)
+        if (!usePatternMap)
         {
-            std::string pattern = Helpers::GetParentPattern(key);
-            if (pattern.size() <= 3) Update1D(pattern, val, oldBarcode);
-            else if (pattern.size() == 9) Update2D(pattern, val, oldBarcode);
+            for (auto&[key, val] : chromosome)
+            {
+                std::string pattern = Helpers::GetParentPattern(key);
+                if (pattern.size() <= 3) Update1D(pattern, val, oldBarcode);
+                else if (pattern.size() == 9) Update2D(pattern, val, oldBarcode);
+            }
         }
-    }
-
-
-    /// Updates the GIVEN string representation of a barcode once.
-    void Barcode::UpdateStringRepresentation(std::string& input, std::string& output)
-    {
-        auto oldBarcode = input;
-
-        for (auto&[key, val] : chromosome)
+        else
         {
-            std::string pattern = Helpers::GetParentPattern(key);
-            if (pattern.size() <= 3) Update1D(pattern, val, oldBarcode, &output);
-            else if (pattern.size() == 9) Update2D(pattern, val, oldBarcode, &output);
+            // Do the 1D genes first.
+            for (auto&[key, val] : chromosome)
+            {
+                if (key >= 10) break;
+                std::string pattern = Helpers::GetParentPattern(key);
+                Update1D(pattern, val, oldBarcode);
+            }
+
+            // Do the 2D genes together.
+            Update2DWithPatternMap(oldBarcode);
         }
     }
 
@@ -322,6 +327,29 @@ namespace ABME
             for (auto& pos : positions)
             {
                 update[width * (j + 1) + pos + 1] = replacement;
+            }
+        }
+    }
+
+
+    void Barcode::Update2DWithPatternMap(std::string& oldBarcode)
+    {
+#pragma omp parallel for
+        for (int j = 0; j < height - 2; ++j)
+        {
+            for (int i = 0; i < width - 2; ++i)
+            {
+                // Get the pattern at this position of the barcode.
+                auto subBarcode = oldBarcode.substr(j * width + i, 3) + oldBarcode.substr((j + 1) * width + i, 3) + oldBarcode.substr((j + 2) * width + i, 3);
+
+                // Find which gene this would require.
+                auto geneIndex = GenePatternMap[subBarcode];
+
+                // Do we have this gene?
+                if (chromosome.count(geneIndex) == 0) continue;
+
+                // Replace at the right position.
+                barcode[width * (j + 1) + i + 1] = chromosome[geneIndex];
             }
         }
     }

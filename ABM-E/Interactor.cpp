@@ -42,8 +42,8 @@ namespace ABME
             secondCloneNext.Subtract(firstClone);
 
             // Update barcodes.
-            firstCloneNext.Update();
-            secondCloneNext.Update();
+            firstCloneNext.Update(true);
+            secondCloneNext.Update(true);
 
             // Replace barcodes of the next iteration.
             firstClone.SetStringRepresentation(firstCloneNext.GetStringRepresentation());
