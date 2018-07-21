@@ -4,6 +4,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <random>
+#include "GeneticCode.h"
 #include "GlobalSettings.h"
 #include "Helpers.h"
 #include "Individual.h"
@@ -128,13 +129,13 @@ namespace ABME
         size_t max = 0;
         for (auto& ind : Individuals)
         {
-            min = std::min(min, ind->ItsChromosome.size());
-            max = std::max(max, ind->ItsChromosome.size());
+            min = std::min(min, ind->ItsGeneticCode.Length());
+            max = std::max(max, ind->ItsGeneticCode.Length());
         }
 
         for (auto& ind : Individuals)
         {
-            int redLevel = max > min ? 255 * float(ind->ItsChromosome.size() - min) / (max - min) : 128;
+            int redLevel = max > min ? 255 * float(ind->ItsGeneticCode.Length() - min) / (max - min) : 128;
             int blueLevel = 255 - redLevel;
             rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
         }
@@ -166,8 +167,10 @@ namespace ABME
             auto prototype = Helpers::GenerateRandomChromosome(length, useSimpleGenesFirst);
             for (auto i = 0; i < count; ++i)
             {
-                auto chromosome = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototype) : Helpers::GenerateRandomChromosome(length, useSimpleGenesFirst);
-                Individuals.push_back(std::make_unique<Individual>(*this, chromosome));
+                GeneticCode geneticCode;
+                geneticCode.ActiveGenes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototype) : Helpers::GenerateRandomChromosome(length, useSimpleGenesFirst);
+
+                Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
             }
         }
 
@@ -229,9 +232,10 @@ namespace ABME
         }
 
         // Update all individuals.
-        for (auto& individual : Individuals)
+        for (int i = 0; i < Individuals.size(); ++i)
         {
-            individual->Update(Map, Snapshot, Colocations, Regions);
+            auto& individual = Individuals[i];
+            individual->Update(Snapshot, Colocations, Regions);
             
             // Add random ("Brownian") motion.
             int newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
@@ -330,12 +334,24 @@ namespace ABME
             std::map<int, int> genePool;
             
             float averageAge = 0.f;
+            double averageMutationRateBitFlip = 0;
+            double averageMutationRateInsertion = 0;
+            double averageMutationRateDeletion = 0;
+            double averageMutationRateMeta = 0;
             for (auto& individual : Individuals)
             {
-                genePool[individual->ItsChromosome.size()]++;
+                genePool[individual->ItsGeneticCode.Length()]++;
                 averageAge += individual->Age;
+                averageMutationRateBitFlip += individual->ItsGeneticCode.GetFlipMutationRate();
+                averageMutationRateInsertion += individual->ItsGeneticCode.GetInsertionMutationRate();
+                averageMutationRateDeletion += individual->ItsGeneticCode.GetDeletionMutationRate();
+                averageMutationRateMeta += individual->ItsGeneticCode.GetMetaMutationRate();
             }
             averageAge /= Individuals.size();
+            averageMutationRateBitFlip /= Individuals.size();
+            averageMutationRateInsertion /= Individuals.size();
+            averageMutationRateDeletion /= Individuals.size();
+            averageMutationRateMeta /= Individuals.size();
 
             float averageLength = 0.f;
             for (auto&[length, count] : genePool)
@@ -346,10 +362,14 @@ namespace ABME
             if (Individuals.size() > 0) averageLength /= Individuals.size();
             log << "\nAvg. chromosome length: " << averageLength << std::endl;
             log << "\nAvg. age: " << averageAge << std::endl;
+            log << "\nAvg. mut. rate (flip): " << averageMutationRateBitFlip << std::endl;
+            log << "Avg. mut. rate (ins.): " << averageMutationRateInsertion << std::endl;
+            log << "Avg. mut. rate (del.): " << averageMutationRateDeletion << std::endl;
+            log << "Avg. mut. rate (meta): " << averageMutationRateMeta << std::endl;
 
             // Report most popular chromosome.
             std::vector<Chromosome> chromosomes;
-            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsChromosome);
+            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.ActiveGenes);
 
             std::pair<Chromosome, int> chrCount = Helpers::MostPopularChromosome(chromosomes);
             std::pair<Chromosome, int> chrTypeCount = Helpers::MostPopularChromosome(chromosomes, true);
@@ -440,31 +460,46 @@ namespace ABME
     /// Generates tiles randomly all over the map (within regions only).
     void Environment::GenerateRandomTiles(int numTilesToAdd)
     {
-        std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - 1);
-        std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - 1);
+        if (numTilesToAdd == 0) return;
 
-        while (numTilesToAdd > 0)
+        std::vector<int> relativeIndices;
+        for (auto i = 0; i < Map.cols * Map.rows; ++i)
         {
-            auto x = distWidth(GlobalSettings::RNG);
-            auto y = distHeight(GlobalSettings::RNG);
+            auto x = i % Map.cols;
+            auto y = i / Map.cols;
             auto& tile = Map.at<uchar>(y, x);
-
-            if (tile == 255 || !Helpers::PointInsideRects(Point(x, y), Regions)) continue;
-            else tile = 255;
-
-            --numTilesToAdd;
+            if (Helpers::PointInsideRects(Point(x, y), Regions) && ((tile == 0 && numTilesToAdd > 0) || (tile == 255 && numTilesToAdd < 0))) relativeIndices.push_back(i);
         }
 
-        while (numTilesToAdd < 0)
+        // Shuffle the indices.
+        std::shuffle(relativeIndices.begin(), relativeIndices.end(), GlobalSettings::RNG);
+
+        // Pick spots to deposit.
+        if (numTilesToAdd > 0)
         {
-            auto x = distWidth(GlobalSettings::RNG);
-            auto y = distHeight(GlobalSettings::RNG);
-            auto& tile = Map.at<uchar>(y, x);
+            for (auto i : relativeIndices)
+            {
+                auto tileX = i % Map.cols;
+                auto tileY = i / Map.cols;
 
-            if (tile == 0 || !Helpers::PointInsideRects(Point(x, y), Regions)) continue;
-            else tile = 0;
+                // Activate tile.
+                Map.at<uchar>(tileY, tileX) = 255;
+                --numTilesToAdd;
+                if (numTilesToAdd <= 0) break;
+            }
+        }
+        else
+        {
+            for (auto i : relativeIndices)
+            {
+                auto tileX = i % Map.cols;
+                auto tileY = i / Map.cols;
 
-            ++numTilesToAdd;
+                // Activate tile.
+                Map.at<uchar>(tileY, tileX) = 0;
+                ++numTilesToAdd;
+                if (numTilesToAdd >= 0) break;
+            }
         }
     }
 

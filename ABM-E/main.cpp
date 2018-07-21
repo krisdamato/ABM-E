@@ -21,6 +21,8 @@ int main(int argc, char** argv)
     GlobalSettings::ForceEqualChromosomeReproductions = false;
     GlobalSettings::DistanceStep = 4;
     GlobalSettings::AllowFreeTileMovement = true;
+    GlobalSettings::TileDepositsEqualDifference = false;
+    GlobalSettings::MutationRatesEvolve = true;
 
     // Create a logger.
     auto& logger = Logger::Instance();
@@ -37,7 +39,7 @@ int main(int argc, char** argv)
     Environment environment(300, 128);
     environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
     environment.AddRegion(cv::Rect(120, 60, 60, 20), 0.00f);
-    environment.AddRegion(cv::Rect(180, 0, 120, 128), 0.05f);
+    environment.AddRegion(cv::Rect(180, 0, 120, 128), 0.08f);
 
     environment.Initialise({ {4, 1000} }, false, true);
 
@@ -49,7 +51,7 @@ int main(int argc, char** argv)
     clock_t begin = clock();
 
     bool running = true;
-    bool drawEnvironment = false;
+    bool drawEnvironment = true;
     int crisisTiles = 0;
     
     std::string envWindowName = "ABME - Environment";

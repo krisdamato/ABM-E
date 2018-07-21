@@ -34,6 +34,8 @@ namespace ABME
         static bool ForceEqualChromosomeReproductions;
         static int DistanceStep;
         static bool AllowFreeTileMovement;
+        static bool TileDepositsEqualDifference;
+        static bool MutationRatesEvolve;
 
     protected:
         static std::vector<int> GeneIndices;

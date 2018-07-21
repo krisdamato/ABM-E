@@ -32,7 +32,9 @@ namespace ABME
         auto secondClone = *second.CurrentBarcode;
         auto firstCloneNext = *first.CurrentBarcode;
         auto secondCloneNext = *second.CurrentBarcode;
-        
+        auto firstCount = 0;
+        auto secondCount = 0;
+
         for (auto i = 0; i < GlobalSettings::NumInteractionUpdates; ++i)
         {
             // Keep the complement of the intersection.
@@ -46,18 +48,20 @@ namespace ABME
             // Replace barcodes of the next iteration.
             firstClone.SetStringRepresentation(firstCloneNext.GetStringRepresentation());
             secondClone.SetStringRepresentation(secondCloneNext.GetStringRepresentation());
-        }
 
-        // Count the number of "live" cells in each.
-        auto firstCount = firstClone.CountLiveCells();
-        auto secondCount = secondClone.CountLiveCells();
+            // Count the number of "live" cells in each.
+            firstCount = firstClone.CountLiveCells();
+            secondCount = secondClone.CountLiveCells();
+
+            if (firstCount == 0 || secondCount == 0) break;
+        }
 
         // Kill any that have zero cells.
         if (firstCount == 0) first.Kill();
         if (secondCount == 0) second.Kill();
 
         // If chromosomes have to be equal length, check to make sure.
-        if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsChromosome.size() != second.ItsChromosome.size()) return nullptr;
+        if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsGeneticCode.Length() != second.ItsGeneticCode.Length()) return nullptr;
 
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
@@ -79,24 +83,41 @@ namespace ABME
         std::uniform_real_distribution<> dist(0.0, 1.0);
 
         // Create an empty chromosome.
-        auto& firstChromosome = first.ItsChromosome;
-        auto& secondChromosome = second.ItsChromosome;
-        Chromosome newChromosome;
+        auto& firstGenetics = first.ItsGeneticCode;
+        auto& secondGenetics = second.ItsGeneticCode;
+        GeneticCode newGeneticCode;
 
+        if (GlobalSettings::MutationRatesEvolve)
+        {
+            // Crossover metamutation parameters.
+            newGeneticCode.FlipMutationRate = Helpers::Crossover(firstGenetics.FlipMutationRate, secondGenetics.FlipMutationRate, dist);
+            newGeneticCode.InsertionMutationRate = Helpers::Crossover(firstGenetics.InsertionMutationRate, secondGenetics.InsertionMutationRate, dist);
+            newGeneticCode.DeletionMutationRate = Helpers::Crossover(firstGenetics.DeletionMutationRate, secondGenetics.DeletionMutationRate, dist);
+            newGeneticCode.MetaMutationRate = Helpers::Crossover(firstGenetics.MetaMutationRate, secondGenetics.MetaMutationRate, dist);
+
+            // Mutate mutation parameters.
+            newGeneticCode.MetaMutationRate = Helpers::BitFlip(newGeneticCode.MetaMutationRate, dist, newGeneticCode.GetMetaMutationRate());
+            newGeneticCode.FlipMutationRate = Helpers::BitFlip(newGeneticCode.FlipMutationRate, dist, newGeneticCode.GetMetaMutationRate());
+            newGeneticCode.InsertionMutationRate = Helpers::BitFlip(newGeneticCode.InsertionMutationRate, dist, newGeneticCode.GetMetaMutationRate());
+            newGeneticCode.DeletionMutationRate = Helpers::BitFlip(newGeneticCode.DeletionMutationRate, dist, newGeneticCode.GetMetaMutationRate());
+        }
+        
         // Pick a random length (from the two).
-        int newLength = dist(GlobalSettings::RNG) < 0.5 ? firstChromosome.size() : secondChromosome.size();
+        int newLength = dist(GlobalSettings::RNG) < 0.5 ? firstGenetics.Length() : secondGenetics.Length();
 
         // Convert chromosomes to vectors of gene indices and values.
         std::vector<int> geneIndices;
         std::vector<uchar> geneValues;
-        Helpers::ConvertChromosomeToVectors(firstChromosome, geneIndices, geneValues);
-        Helpers::ConvertChromosomeToVectors(secondChromosome, geneIndices, geneValues);
+        Helpers::ConvertChromosomeToVectors(firstGenetics.ActiveGenes, geneIndices, geneValues);
+        Helpers::ConvertChromosomeToVectors(secondGenetics.ActiveGenes, geneIndices, geneValues);
 
-        std::uniform_int_distribution<std::mt19937::result_type> distIndex(0, firstChromosome.size() + secondChromosome.size() - 1);
+        std::uniform_int_distribution<std::mt19937::result_type> distIndex(0, firstGenetics.Length() + secondGenetics.Length() - 1);
         std::uniform_int_distribution<std::mt19937::result_type> distGeneIndex(0, GlobalSettings::NumGenes - 1);
         std::uniform_int_distribution<std::mt19937::result_type> distDeleteIndex(0, newLength - 1);
 
-        // Crossover.
+        Chromosome& newChromosome = newGeneticCode.ActiveGenes;
+
+        // Crossover active genes.
         // Pick a gene randomly from the two chromosomes, and ignore it if it already exists.
         for (auto i = 0; i < newLength;)
         {
@@ -111,7 +132,7 @@ namespace ABME
         }
 
         // Insert mutation.
-        if ((dist(GlobalSettings::RNG) < GlobalSettings::GeneticInsertionRate) && (newChromosome.size() < GlobalSettings::NumGenes))
+        if ((dist(GlobalSettings::RNG) < newGeneticCode.GetInsertionMutationRate()) && (newGeneticCode.Length() < GlobalSettings::NumGenes))
         {
             auto geneIndex = -1;
             bool done = false;
@@ -123,27 +144,23 @@ namespace ABME
             
             uchar geneValue = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
             newChromosome[geneIndex] = geneValue;
-
-            //std::cout << "INSERTION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
         }
 
         // Delete mutation.
-        if ((dist(GlobalSettings::RNG) < GlobalSettings::GeneticDeletionRate) && (newChromosome.size() >= 2))
+        if ((dist(GlobalSettings::RNG) < newGeneticCode.GetDeletionMutationRate()) && (newGeneticCode.Length() >= 2))
         {
             // Remove a random gene.
             int removePosition = distDeleteIndex(GlobalSettings::RNG);
             auto it = newChromosome.begin();
             for (auto i = 0; i < removePosition; ++i, ++it);
             newChromosome.erase(it);
-
-            //std::cout << "DELETION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
         }
 
         // Mutate.
         // Note: only gene value is mutated here.
         for (auto&[key, value] : newChromosome)
         {
-            bool flip = dist(GlobalSettings::RNG) < GlobalSettings::GeneFlipMutationRate;
+            bool flip = dist(GlobalSettings::RNG) < newGeneticCode.GetFlipMutationRate();
             if (flip)
             {
                 if (value == '1') value = '0';
@@ -152,7 +169,7 @@ namespace ABME
         }
 
         // Create an individual with this chromosome.
-        auto offspring = new Individual(first.ItsEnvironment, newChromosome);
+        auto offspring = new Individual(first.ItsEnvironment, newGeneticCode);
         offspring->X = first.X;
         offspring->Y = first.Y;
 
@@ -165,60 +182,5 @@ namespace ABME
         // If there is no food tile to take, the offspring dies.
         delete offspring;
         return nullptr;
-    }
-
-    Individual* Interactor::ReproduceFixedGenes(Individual& first, Individual& second)
-    {
-        std::uniform_real_distribution<> dist(0.0, 1.0);
-
-        // Create an empty chromosome.
-        auto& firstChromosome = first.ItsChromosome;
-        auto& secondChromosome = second.ItsChromosome;
-        Chromosome newChromosome;
-
-        // Crossover.
-        for (auto i = 0; i < firstChromosome.size(); ++i)
-        {
-            auto geneIndex = GlobalSettings::GetGeneIndex(i);
-            auto newGene = dist(GlobalSettings::RNG) < 0.5f ? firstChromosome[geneIndex] : secondChromosome[geneIndex];
-            newChromosome[geneIndex] = newGene;
-        }
-
-        // Insert/delete.
-        if (dist(GlobalSettings::RNG) < GlobalSettings::GeneticInsertionRate)
-        {
-            auto geneIndex = GlobalSettings::GetGeneIndex(firstChromosome.size());
-            uchar newGene = dist(GlobalSettings::RNG) < 0.5f ? '1' : '0';
-            newChromosome[geneIndex] = newGene;
-
-            std::cout << "INSERTION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
-        }
-
-        if (dist(GlobalSettings::RNG) < GlobalSettings::GeneticDeletionRate && newChromosome.size() >= 2)
-        {
-            // Just remove the last gene.
-            newChromosome.erase(--newChromosome.end());
-
-            std::cout << "DELETION MUTATION! New chromosome of length " << newChromosome.size() << std::endl;
-        }
-
-        // Mutate.
-        for (auto i = 0; i < newChromosome.size(); ++i)
-        {
-            auto geneIndex = GlobalSettings::GetGeneIndex(i);
-            bool flip = dist(GlobalSettings::RNG) < GlobalSettings::GeneFlipMutationRate;
-            if (flip)
-            {
-                if (newChromosome[geneIndex] == '1') newChromosome[geneIndex] = '0';
-                if (newChromosome[geneIndex] == '0') newChromosome[geneIndex] = '1';
-            }
-        }
-
-        // Create an individual with this chromosome.
-        auto offspring = new Individual(first.ItsEnvironment, newChromosome);
-        offspring->X = first.X;
-        offspring->Y = first.Y;
-
-        return offspring;
     }
 }

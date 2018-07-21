@@ -7,9 +7,9 @@
 namespace ABME
 {
     std::mt19937 GlobalSettings::RNG;
-    const double GlobalSettings::GeneFlipMutationRate = 0.01; // Per gene.
-    const double GlobalSettings::GeneticInsertionRate = 0.01; // Per reproduction.
-    const double GlobalSettings::GeneticDeletionRate = 0.01; // Per reproduction.
+    const double GlobalSettings::GeneFlipMutationRate = 0.1; // Per gene.
+    const double GlobalSettings::GeneticInsertionRate = 0.1; // Per reproduction.
+    const double GlobalSettings::GeneticDeletionRate = 0.1; // Per reproduction.
     std::vector<int> GlobalSettings::GeneIndices;
     std::vector<int> GlobalSettings::BarcodeRandoms;
     int GlobalSettings::NextRandomIndex = 0;
@@ -17,6 +17,8 @@ namespace ABME
     bool GlobalSettings::ForceEqualChromosomeReproductions = false;
     int GlobalSettings::DistanceStep = 1;
     bool GlobalSettings::AllowFreeTileMovement = false;
+    bool GlobalSettings::TileDepositsEqualDifference = false;
+    bool GlobalSettings::MutationRatesEvolve = false;
 
 
     void GlobalSettings::Initialise(int numThreads)

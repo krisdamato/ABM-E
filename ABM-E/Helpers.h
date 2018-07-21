@@ -339,5 +339,37 @@ namespace ABME
 
             return oss.str();
         }
+
+
+        template <typename T>
+        inline T Crossover(T& first, T& second, std::uniform_real_distribution<>& dist)
+        {
+            T t = 0;
+            for (int i = 0; i < 8 * sizeof(T); ++i)
+            {
+                bool firstBit = (first & 1UL << i) == (1UL << i);
+                bool secondBit = (second & 1UL << i) == (1UL << i);
+
+                bool choice = dist(GlobalSettings::RNG) < 0.5 ? firstBit : secondBit;
+                t = choice ? t | (1UL << i) : t & ~(1UL << i);
+            }
+
+            return t;
+        }
+
+
+        template <typename T>
+        inline T BitFlip(T& operand, std::uniform_real_distribution<>& dist, double flipProbability)
+        {
+            for (int i = 0; i < 8 * sizeof(T); ++i)
+            {
+                if (dist(GlobalSettings::RNG) < flipProbability)
+                {
+                    operand ^= (1UL << i);
+                }
+            }
+
+            return operand;
+        }
     }
 }

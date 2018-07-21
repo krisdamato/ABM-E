@@ -8,9 +8,9 @@ namespace ABME
 {
     using namespace cv;
 
-    Individual::Individual(Environment& environment, Chromosome chromosome) : ItsEnvironment(environment), ItsChromosome(chromosome)
+    Individual::Individual(Environment& environment, GeneticCode geneticCode) : ItsEnvironment(environment), ItsGeneticCode(geneticCode)
     {
-        CurrentBarcode = std::make_unique<Barcode>(ItsChromosome, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+        CurrentBarcode = std::make_unique<Barcode>(ItsGeneticCode.ActiveGenes, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
         Balances = std::vector<int>(ItsEnvironment.GetRegions().size());
     }
 
@@ -27,19 +27,19 @@ namespace ABME
     }
 
 
-    bool Individual::AddDropTile(cv::Mat& environment, int numToTake)
+    bool Individual::AddDropTile(int numToTake)
     {
         // If it's a "sink"...
         if (numToTake > 0)
         {
-            CurrentBarcode->ExtractTiles(environment, X, Y, numToTake, ItsEnvironment.GetRegions(), Balances);
+            CurrentBarcode->ExtractTiles(ItsEnvironment.GetMap(), X, Y, numToTake, ItsEnvironment.GetRegions(), Balances);
             if (numToTake > 0) return false;
         }
         // Or if it's a "source"...
         else if (numToTake < 0)
         {
             // Return "food" tiles to the environment.
-            CurrentBarcode->DropTiles(environment, X, Y, numToTake, ItsEnvironment.GetRegions(), Balances, true);
+            CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, numToTake, ItsEnvironment.GetRegions(), Balances, true);
         }
 
         return true;
@@ -48,7 +48,7 @@ namespace ABME
 
     bool Individual::BeBorn()
     {
-        if (AddDropTile(ItsEnvironment.GetMap(), 1))
+        if (AddDropTile(1))
         {
             return true;
         }
@@ -59,7 +59,7 @@ namespace ABME
 
     Individual* Individual::Clone(bool ignoreBalance) const
     {
-        auto* individual = new Individual(ItsEnvironment, ItsChromosome);
+        auto* individual = new Individual(ItsEnvironment, ItsGeneticCode);
         individual->Age = Age;
         individual->X = X;
         individual->Y = Y;
@@ -101,18 +101,44 @@ namespace ABME
     void Individual::Kill()
     {
         Alive = false;
-        for (int i = 0; i < Balances.size(); ++i)
+        if (GlobalSettings::AllowFreeTileMovement)
         {
-            ItsEnvironment.RegisterActiveTileAddition(i, Balances[i]);
+            auto count = 0;
+
+            // Sum all additions together.
+            for (auto& c : Balances)
+            {
+                count += c;
+            }
+
+            // Drop the tiles where at the individual's active tiles.
+            count = -count;
+            if (count < 0) CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, count, ItsEnvironment.GetRegions(), Balances, true);
+
+            // If there still remain tiles, drop them around the active tiles at the body.
+            if (count < 0) CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, count, ItsEnvironment.GetRegions(), Balances, false);
+            
+            // If at this point, there are still some more to add (or take), drop them in the region.
+            if (count != 0)
+            {
+                int index = Helpers::PointInRegionIndex(Point(X, Y), ItsEnvironment.GetRegions());
+                ItsEnvironment.RegisterActiveTileAddition(index, -count);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < Balances.size(); ++i)
+            {
+                ItsEnvironment.RegisterActiveTileAddition(i, Balances[i]);
+            }
         }
     }
 
 
-    void Individual::Update(Mat& baseEnvironment, Mat& interactableEnvironment, Environment::ColocationMapType& colocations, std::vector<cv::Rect>& offLimitRegions)
+    void Individual::Update(Mat& interactableEnvironment, Environment::ColocationMapType& colocations, std::vector<cv::Rect>& offLimitRegions)
     {
         // Integrate environmental input.
         auto interactionRegion = interactableEnvironment(Rect(X, Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize));
-        auto baseRegion = baseEnvironment(Rect(X, Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize));
         CurrentBarcode->Input(interactionRegion);
 
         // Update barcode once.
@@ -123,13 +149,21 @@ namespace ABME
         CurrentBarcode->ComputeMetrics(movement, cellsActive);
 
         // Leave or extract some "food".
-        auto representation = Helpers::ConvertMatToString(baseRegion);
         int difference = cellsActive - LastCellsActive;
         bool foundTile = true;
         
         if (difference != 0)
         {
-            foundTile = AddDropTile(baseEnvironment, difference > 0 ? 1 : -1);
+            auto numDeposit = GlobalSettings::TileDepositsEqualDifference ? difference : (difference > 0 ? 1 : -1);
+            foundTile = AddDropTile(numDeposit);
+        }
+
+        // Update live status.
+        // An individual dies if it has no food or all or no cell is active.
+        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTile)
+        {
+            Kill();
+            return;
         }
 
         // Compute movement and collisions.
@@ -158,14 +192,6 @@ namespace ABME
 
         // Only update food if we couldn't extract or deposit new tiles.
         LastCellsActive = cellsActive;
-
-        // Update live status.
-        // An individual dies if it has no food or all or no cell is active.
-        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTile)
-        {
-            Kill();
-            return;
-        }
 
         // Add position to colocations.
         colocations.insert(Environment::ColocationMapType::value_type(Vec2i(X, Y), this));
