@@ -338,6 +338,7 @@ namespace ABME
             double averageMutationRateInsertion = 0;
             double averageMutationRateDeletion = 0;
             double averageMutationRateMeta = 0;
+            double averageMutationRateTrans = 0;
             for (auto& individual : Individuals)
             {
                 genePool[individual->ItsGeneticCode.Length()]++;
@@ -345,12 +346,14 @@ namespace ABME
                 averageMutationRateBitFlip += individual->ItsGeneticCode.GetFlipMutationRate();
                 averageMutationRateInsertion += individual->ItsGeneticCode.GetInsertionMutationRate();
                 averageMutationRateDeletion += individual->ItsGeneticCode.GetDeletionMutationRate();
+                averageMutationRateTrans += individual->ItsGeneticCode.GetTransMutationRate();
                 averageMutationRateMeta += individual->ItsGeneticCode.GetMetaMutationRate();
             }
             averageAge /= Individuals.size();
             averageMutationRateBitFlip /= Individuals.size();
             averageMutationRateInsertion /= Individuals.size();
             averageMutationRateDeletion /= Individuals.size();
+            averageMutationRateTrans /= Individuals.size();
             averageMutationRateMeta /= Individuals.size();
 
             float averageLength = 0.f;
@@ -365,6 +368,7 @@ namespace ABME
             log << "\nAvg. mut. rate (flip): " << averageMutationRateBitFlip << std::endl;
             log << "Avg. mut. rate (ins.): " << averageMutationRateInsertion << std::endl;
             log << "Avg. mut. rate (del.): " << averageMutationRateDeletion << std::endl;
+            log << "Avg. mut. rate (trans.): " << averageMutationRateTrans << std::endl;
             log << "Avg. mut. rate (meta): " << averageMutationRateMeta << std::endl;
 
             // Report most popular chromosome.

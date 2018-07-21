@@ -11,6 +11,7 @@ def process_logfile(filename):
         mrf = []
         mri = []
         mrd = []
+        mrt = []
         mrm = []
 
         for n, line in enumerate(f):
@@ -20,6 +21,7 @@ def process_logfile(filename):
             search_string_mrf = "Avg. mut. rate (flip): "
             search_string_mri = "Avg. mut. rate (ins.): "
             search_string_mrd = "Avg. mut. rate (del.): "
+            search_string_mrt = "Avg. mut. rate (trans.): "
             search_string_mrm = "Avg. mut. rate (meta): "
 
             
@@ -37,6 +39,8 @@ def process_logfile(filename):
                 mri.append(float(line.replace(search_string_mri, "")))
             if search_string_mrd in line:
                 mrd.append(float(line.replace(search_string_mrd, "")))
+            if search_string_mrt in line:
+                mrt.append(float(line.replace(search_string_mrt, "")))
             if search_string_mrm in line:
                 mrm.append(float(line.replace(search_string_mrm, "")))
 
@@ -47,6 +51,7 @@ def process_logfile(filename):
     ax[3].plot(mrf, label="Flip")
     ax[3].plot(mri, label="Insertion")
     ax[3].plot(mrd, label="Deletion")
+    ax[3].plot(mrt, label="Trans.")
     ax[3].plot(mrm, label="Meta")
 
     ax[3].set_xlabel("Iteration Number (x100)")

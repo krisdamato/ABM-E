@@ -53,19 +53,19 @@ namespace ABME
             firstCount = firstClone.CountLiveCells();
             secondCount = secondClone.CountLiveCells();
 
-            if (firstCount == 0 || secondCount == 0) break;
+            if (firstCount == 0 || firstCount == 256 || secondCount == 0 || secondCount == 256) break;
         }
 
         // Kill any that have zero cells.
-        if (firstCount == 0) first.Kill();
-        if (secondCount == 0) second.Kill();
+        if (firstCount == 0 || firstCount == 256) first.Kill();
+        if (secondCount == 0 || secondCount == 256) second.Kill();
 
         // If chromosomes have to be equal length, check to make sure.
         if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsGeneticCode.Length() != second.ItsGeneticCode.Length()) return nullptr;
 
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
-        if (firstCount > 0 && secondCount > 0)
+        if (first.IsAlive() && second.IsAlive())
         {
             cv::Mat& environment = first.ItsEnvironment.GetMap();
             
@@ -93,6 +93,7 @@ namespace ABME
             newGeneticCode.FlipMutationRate = Helpers::Crossover(firstGenetics.FlipMutationRate, secondGenetics.FlipMutationRate, dist);
             newGeneticCode.InsertionMutationRate = Helpers::Crossover(firstGenetics.InsertionMutationRate, secondGenetics.InsertionMutationRate, dist);
             newGeneticCode.DeletionMutationRate = Helpers::Crossover(firstGenetics.DeletionMutationRate, secondGenetics.DeletionMutationRate, dist);
+            newGeneticCode.TransMutationRate = Helpers::Crossover(firstGenetics.TransMutationRate, secondGenetics.TransMutationRate, dist);
             newGeneticCode.MetaMutationRate = Helpers::Crossover(firstGenetics.MetaMutationRate, secondGenetics.MetaMutationRate, dist);
 
             // Mutate mutation parameters.
@@ -100,6 +101,7 @@ namespace ABME
             newGeneticCode.FlipMutationRate = Helpers::BitFlip(newGeneticCode.FlipMutationRate, dist, newGeneticCode.GetMetaMutationRate());
             newGeneticCode.InsertionMutationRate = Helpers::BitFlip(newGeneticCode.InsertionMutationRate, dist, newGeneticCode.GetMetaMutationRate());
             newGeneticCode.DeletionMutationRate = Helpers::BitFlip(newGeneticCode.DeletionMutationRate, dist, newGeneticCode.GetMetaMutationRate());
+            newGeneticCode.TransMutationRate = Helpers::BitFlip(newGeneticCode.TransMutationRate, dist, newGeneticCode.GetMetaMutationRate());
         }
         
         // Pick a random length (from the two).
@@ -144,6 +146,39 @@ namespace ABME
             
             uchar geneValue = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
             newChromosome[geneIndex] = geneValue;
+        }
+
+        // Transmutation (replacement gene with new value).
+        if ((dist(GlobalSettings::RNG) < newGeneticCode.GetTransMutationRate()) && (newGeneticCode.Length() < GlobalSettings::NumGenes))
+        {
+            // Pick a random gene and change its number.
+            int changePosition = distDeleteIndex(GlobalSettings::RNG);
+
+            // Remake a new chromosome.
+            Chromosome transChromosome;
+            int i = 0;
+            for (auto&[key, value] : newChromosome)
+            {
+                if (i == changePosition)
+                {
+                    bool done = false;
+                    auto geneIndex = -1;
+                    while (!done)
+                    {
+                        geneIndex = distGeneIndex(GlobalSettings::RNG);
+                        done = newChromosome.count(geneIndex) == 0;
+                    }
+                    transChromosome[geneIndex] = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
+                }
+                else
+                {
+                    transChromosome[key] = value;
+                }
+
+                ++i;
+            }
+
+            newChromosome = transChromosome;
         }
 
         // Delete mutation.

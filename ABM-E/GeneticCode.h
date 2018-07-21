@@ -24,11 +24,16 @@ namespace ABME
         }
 
 
+        inline double GetTransMutationRate() const
+        {
+            return double(TransMutationRate) / 255;
+        }
+
+
         inline double GetMetaMutationRate() const
         {
             return GlobalSettings::BaseMetaMutationRate + double(MetaMutationRate) / 255;
         }
-
 
         inline size_t Length() const
         {
@@ -40,6 +45,7 @@ namespace ABME
         uchar FlipMutationRate = 2; // on 255.
         uchar InsertionMutationRate = 2; // on 255.
         uchar DeletionMutationRate = 2; // on 255.
+        uchar TransMutationRate = 2; // on 255.
         uchar MetaMutationRate = 1; // on 255.
     };
 }

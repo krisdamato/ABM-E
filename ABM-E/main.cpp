@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     // Initialise global parameters.
     GlobalSettings::Initialise(numThreads);
     GlobalSettings::ForceEqualChromosomeReproductions = false;
-    GlobalSettings::DistanceStep = 4;
+    GlobalSettings::DistanceStep = 1;
     GlobalSettings::AllowFreeTileMovement = true;
     GlobalSettings::TileDepositsEqualDifference = false;
     GlobalSettings::MutationRatesEvolve = true;
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     environment.AddRegion(cv::Rect(120, 60, 60, 20), 0.00f);
     environment.AddRegion(cv::Rect(180, 0, 120, 128), 0.08f);
 
-    environment.Initialise({ {2, 1000} }, false, true);
+    environment.Initialise({ {4, 1000} }, false, true);
 
     // Get first individual.
     auto& individual = environment[0];
