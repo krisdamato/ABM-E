@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     // Initialise global parameters.
     GlobalSettings::Initialise(numThreads);
     GlobalSettings::ForceEqualChromosomeReproductions = false;
-    GlobalSettings::DistanceStep = 1;
+    GlobalSettings::DistanceStep = 4;
     GlobalSettings::AllowFreeTileMovement = true;
     GlobalSettings::TileDepositsEqualDifference = false;
     GlobalSettings::MutationRatesEvolve = true;
@@ -33,13 +33,13 @@ int main(int argc, char** argv)
     //environment.AddRegion(cv::Rect(320, 0, 192, 128), 0.04f);
     //environment.AddRegion(cv::Rect(192, 56, 128, 16), 0.01f);
     
- /*   Environment environment(128, 128);
-    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.08f);
-*/
-    Environment environment(300, 128);
-    environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
-    environment.AddRegion(cv::Rect(120, 60, 60, 20), 0.00f);
-    environment.AddRegion(cv::Rect(180, 0, 120, 128), 0.08f);
+    Environment environment(512, 512);
+    environment.AddRegion(cv::Rect(0, 0, 512, 512), 0.02f);
+
+    //Environment environment(300, 128);
+    //environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
+    //environment.AddRegion(cv::Rect(120, 60, 60, 20), 0.00f);
+    //environment.AddRegion(cv::Rect(180, 0, 120, 128), 0.08f);
 
     environment.Initialise({ {4, 1000} }, false, true);
 
@@ -93,6 +93,9 @@ int main(int argc, char** argv)
         case ']':
             crisisTiles += 500;
             std::cout << "Set crisis tiles to " << crisisTiles << std::endl;
+            break;
+        case 't':
+            environment.ToggleDrawMode();
             break;
         case 'x':
             int numTiles = environment.CauseTileCrisis(crisisTiles);

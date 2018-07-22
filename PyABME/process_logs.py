@@ -67,7 +67,7 @@ def process_logfile(filename):
     ax[1].xaxis.set_major_locator(MaxNLocator(integer=True))
     ax[2].xaxis.set_major_locator(MaxNLocator(integer=True))
     ax[3].xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax[3].legend(loc="upper right", shadow=False, prop={'size': 6})
+    ax[3].legend(loc="upper center", shadow=False, prop={'size': 6})
     plt.tight_layout()
     fig.savefig("{}_plots.png".format(filename))
     plt.close()

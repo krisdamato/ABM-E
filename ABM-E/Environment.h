@@ -8,6 +8,19 @@ namespace ABME
 {
     class Individual;
 
+    enum DrawMode
+    {
+        DrawModeLength,
+        DrawModeMutIns,
+        DrawModeMutDel,
+        DrawModeMutFlip,
+        DrawModeMutTrans,
+        DrawModeMutMeta,
+        DrawModeAge,
+        DrawModeBackground,
+    };
+
+
     class Environment
     {
     public:
@@ -28,6 +41,7 @@ namespace ABME
         void InitialiseTiles();
         void RegisterActiveTileAddition(int regionIndex, int numTiles);
         void ReleasePopulation();
+        void ToggleDrawMode();
         void Update();
 
         Individual& operator[](int index);
@@ -48,5 +62,6 @@ namespace ABME
         std::vector<cv::Rect> Regions;
         std::vector<int> InitialRegionActiveTiles;
         std::vector<int> NumActiveTilesToAdd;
+        DrawMode drawMode = DrawMode::DrawModeLength;
     };
 }

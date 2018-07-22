@@ -17,8 +17,8 @@ namespace ABME
 
         static std::mt19937 RNG;
         static const int NumGenes = 522;
-        static const int FixedSeed = 3;
-        static const bool Randomise = false;
+        static const int FixedSeed = 0;
+        static const bool Randomise = true;
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;
         static bool ForceEqualChromosomeReproductions;

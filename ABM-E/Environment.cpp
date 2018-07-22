@@ -124,20 +124,144 @@ namespace ABME
         Mat drawMap = cv::Mat(Map.rows, Map.cols, CV_8UC4);
         cv::cvtColor(Map, drawMap, cv::COLOR_GRAY2BGRA);
 
-        // Get chromosome length range.
-        size_t min = 522;
-        size_t max = 0;
-        for (auto& ind : Individuals)
+        // Depending on draw mode, colour it.
+        switch (drawMode)
         {
-            min = std::min(min, ind->ItsGeneticCode.Length());
-            max = std::max(max, ind->ItsGeneticCode.Length());
-        }
+        case DrawMode::DrawModeAge:
+        {
+            // Get chromosome length range.
+            int min = INT_MAX;
+            int max = 0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->Age);
+                max = std::max(max, ind->Age);
+            }
 
-        for (auto& ind : Individuals)
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * float(ind->Age - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        case DrawMode::DrawModeLength:
         {
-            int redLevel = max > min ? 255 * float(ind->ItsGeneticCode.Length() - min) / (max - min) : 128;
-            int blueLevel = 255 - redLevel;
-            rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            // Get chromosome length range.
+            size_t min = 522;
+            size_t max = 0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->ItsGeneticCode.Length());
+                max = std::max(max, ind->ItsGeneticCode.Length());
+            }
+
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * float(ind->ItsGeneticCode.Length() - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        case DrawMode::DrawModeMutDel:
+        {
+            // Get chromosome length range.
+            double min = DBL_MAX;
+            double max = 0.0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->ItsGeneticCode.GetDeletionMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.GetDeletionMutationRate());
+            }
+
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetDeletionMutationRate() - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        case DrawMode::DrawModeMutFlip:
+        {
+            // Get chromosome length range.
+            double min = DBL_MAX;
+            double max = 0.0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->ItsGeneticCode.GetFlipMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.GetFlipMutationRate());
+            }
+
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetFlipMutationRate() - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        case DrawMode::DrawModeMutIns:
+        {
+            // Get chromosome length range.
+            double min = DBL_MAX;
+            double max = 0.0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->ItsGeneticCode.GetInsertionMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.GetInsertionMutationRate());
+            }
+
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetInsertionMutationRate() - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        case DrawMode::DrawModeMutTrans:
+        {
+            // Get chromosome length range.
+            double min = DBL_MAX;
+            double max = 0.0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->ItsGeneticCode.GetTransMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.GetTransMutationRate());
+            }
+
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetTransMutationRate() - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        case DrawMode::DrawModeMutMeta:
+        {
+            // Get chromosome length range.
+            double min = DBL_MAX;
+            double max = 0.0;
+            for (auto& ind : Individuals)
+            {
+                min = std::min(min, ind->ItsGeneticCode.GetMetaMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.GetMetaMutationRate());
+            }
+
+            for (auto& ind : Individuals)
+            {
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetMetaMutationRate() - min) / (max - min) : 128;
+                int blueLevel = 255 - redLevel;
+                rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
+            }
+        }
+        break;
+        default:
+            break;
         }
 
         imshow(windowName, drawMap);
@@ -210,6 +334,46 @@ namespace ABME
         for (auto& ind : Captured)
         {
             Individuals.push_back(std::unique_ptr<Individual>(ind->Clone(true)));
+        }
+    }
+
+
+    void Environment::ToggleDrawMode()
+    {
+        switch (drawMode)
+        {
+        case DrawMode::DrawModeAge:
+            std::cout << "DrawMode: Chr. length\n";
+            drawMode = DrawMode::DrawModeLength;
+            break;
+        case DrawMode::DrawModeLength:
+            std::cout << "DrawMode: Deletion rate\n";
+            drawMode = DrawMode::DrawModeMutDel;
+            break;
+        case DrawMode::DrawModeMutDel:
+            std::cout << "DrawMode: Flip rate\n";
+            drawMode = DrawMode::DrawModeMutFlip;
+            break;
+        case DrawMode::DrawModeMutFlip:
+            std::cout << "DrawMode: Insertion rate\n";
+            drawMode = DrawMode::DrawModeMutIns;
+            break;
+        case DrawMode::DrawModeMutIns:
+            std::cout << "DrawMode: Transmutation rate\n";
+            drawMode = DrawMode::DrawModeMutTrans;
+            break;
+        case DrawMode::DrawModeMutTrans:
+            std::cout << "DrawMode: Metamutation rate\n";
+            drawMode = DrawMode::DrawModeMutMeta;
+            break;
+        case DrawMode::DrawModeMutMeta:
+            std::cout << "DrawMode: Background only\n";
+            drawMode = DrawMode::DrawModeBackground;
+            break;
+        case DrawMode::DrawModeBackground:
+            std::cout << "DrawMode: Age\n";
+            drawMode = DrawMode::DrawModeAge;
+            break;
         }
     }
 
