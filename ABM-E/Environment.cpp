@@ -352,7 +352,7 @@ namespace ABME
         {
             auto& logger = Logger::Instance();
 
-            std::setprecision(4);
+            std::cout << std::setprecision(4);
 
             std::stringstream log;
             log << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
@@ -403,7 +403,7 @@ namespace ABME
             auto geneCountSet = Helpers::GeneStatistics(chromosomes);
 
             log << "Most common genes:\n";
-            std::setprecision(3);
+            std::cout << std::setprecision(2);
             int j = 0;
             for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 15; ++it, ++j)
             {

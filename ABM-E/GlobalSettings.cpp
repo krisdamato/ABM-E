@@ -15,6 +15,7 @@ namespace ABME
     bool GlobalSettings::UseSingleStructuralMutationRate = false;
     bool GlobalSettings::MutationRatesEvolve = false;
     double GlobalSettings::BaseMetaMutationRate = 0.001;
+    const double GlobalSettings::WorldUpdateProbability = 0.1;
 
 
     void GlobalSettings::Initialise(int numThreads)

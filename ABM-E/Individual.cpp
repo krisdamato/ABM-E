@@ -148,19 +148,12 @@ namespace ABME
         Vec2i movement; int cellsActive = 0;
         CurrentBarcode->ComputeMetrics(movement, cellsActive);
 
-        // Leave or extract some "food".
-        int difference = cellsActive - LastCellsActive;
-        bool foundTile = true;
-        
-        if (difference != 0)
-        {
-            auto numDeposit = GlobalSettings::TileDepositsEqualDifference ? difference : (difference > 0 ? 1 : -1);
-            foundTile = AddDropTile(numDeposit);
-        }
+        // Leave or extract some tiles.
+        bool foundTiles = CurrentBarcode->UpdateWorld(ItsEnvironment.GetMap(), X, Y, GlobalSettings::WorldUpdateProbability);
 
         // Update live status.
         // An individual dies if it has no food or all or no cell is active.
-        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTile)
+        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTiles)
         {
             Kill();
             return;
@@ -194,7 +187,7 @@ namespace ABME
         LastCellsActive = cellsActive;
 
         // Add position to colocations.
-        colocations.insert(Environment::ColocationMapType::value_type(Vec2i(X, Y), this));
+        colocations.insert(std::pair(Vec2i(X, Y), this));
 
         // Update individual parameters.
         Age += 1;

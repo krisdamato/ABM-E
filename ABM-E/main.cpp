@@ -23,6 +23,7 @@ int main(int argc, char** argv)
     GlobalSettings::AllowFreeTileMovement = true;
     GlobalSettings::TileDepositsEqualDifference = false;
     GlobalSettings::MutationRatesEvolve = true;
+    GlobalSettings::UseSingleStructuralMutationRate = false;
 
     // Create a logger.
     auto& logger = Logger::Instance();
@@ -40,7 +41,7 @@ int main(int argc, char** argv)
 
     Environment environment(128, 128);
     //environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
-    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.06f);
+    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.08f);
 
     environment.Initialise({ {4, 500}, {5, 500} }, false, true);
 

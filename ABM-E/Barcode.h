@@ -23,6 +23,7 @@ namespace ABME
         void SetStringRepresentation(const std::string& rep);
         void Subtract(const Barcode& rhs);
         void Update(bool usePatternMap, bool useLongPatterns);
+        bool UpdateWorld(cv::Mat& environment, int x, int y, double probability);
 
     protected:
         inline void Update1D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto = nullptr);

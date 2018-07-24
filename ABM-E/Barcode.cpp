@@ -258,6 +258,56 @@ namespace ABME
     }
 
 
+    /// Updates the world map with a small probability.
+    /// Only finishes the action if it finds enough tiles to replace the ones added.
+    /// Returns whether the update was successful.
+    bool Barcode::UpdateWorld(cv::Mat& environment, int x, int y, double probability)
+    {
+        std::uniform_real_distribution<> dist(0.0, 1.0);
+        std::vector<Point> pointsToAdd;
+        std::vector<int> removablePoints;
+
+        auto count = 0;
+        for (auto i = 0; i < barcode.size(); ++i)
+        {
+            int tileX = x + i % width;
+            int tileY = y + i / width;
+            if (barcode[i] == '1' && environment.at<uchar>(tileY, tileX) == 0 && dist(GlobalSettings::RNG) < probability)
+            {
+                pointsToAdd.push_back(Point(tileX, tileY));
+                ++count;
+            }
+
+            if (barcode[i] == '0' && environment.at<uchar>(tileY, tileX) == 255) removablePoints.push_back(i);
+        }
+        
+        // We have failed to update if there are fewer tiles to remove.
+        if (removablePoints.size() < count) return false;
+
+        // Otherwise just fill the spots immediately.
+        for (auto& p : pointsToAdd)
+        {
+            environment.at<uchar>(p.y, p.x) = 255;
+        }
+
+        // Shuffle the removable points.
+        std::shuffle(removablePoints.begin(), removablePoints.end(), GlobalSettings::RNG);
+
+        // Pick spots to deposit.
+        for (auto i : removablePoints)
+        {
+            if (count == 0) break;
+            auto tileX = x + i % GlobalSettings::BarcodeSize;
+            auto tileY = y + i / GlobalSettings::BarcodeSize;
+
+            environment.at<uchar>(tileY, tileX) = 0;
+            --count;
+        }
+
+        return true;
+    }
+
+
     void Barcode::Update1D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto)
     {
         std::string& update = updateInto == nullptr ? barcode : *updateInto;

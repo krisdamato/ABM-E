@@ -79,10 +79,10 @@ namespace ABME
         static const int TMax = std::numeric_limits<T>::max();
 
     private:
-        T FlipMutationRate = 0.01 * TMax; // on T_MAX.
-        T InsertionMutationRate = 0.01 * TMax; // on T_MAX.
-        T DeletionMutationRate = 0.01 * TMax; // on T_MAX.
-        T TransMutationRate = 0.01 * TMax; // on T_MAX.
-        T MetaMutationRate = 0.005 * TMax; // on T_MAX.
+        T FlipMutationRate = T(0.01 * TMax); // on T_MAX.
+        T InsertionMutationRate = T(0.01 * TMax); // on T_MAX.
+        T DeletionMutationRate = T(0.01 * TMax); // on T_MAX.
+        T TransMutationRate = T(0.01 * TMax); // on T_MAX.
+        T MetaMutationRate = T(0.005 * TMax); // on T_MAX.
     };
 }
