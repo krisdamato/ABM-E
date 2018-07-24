@@ -46,9 +46,9 @@ namespace ABME
     class GeneCountComparator
     {
     public:
-        bool operator()(const std::pair<Gene, int>& first, const std::pair<Gene, int>& second) const
+        bool operator()(const std::tuple<int, int, float>& first, const std::tuple<int, int, float>& second) const
         {
-            return first.second > second.second;
+            return std::get<1>(first) > std::get<1>(second);
         }
     };
 
@@ -84,6 +84,11 @@ namespace ABME
                 subtractor = 10;
                 patternLength = 9;
             }
+            else if (geneIndex < 33554432 + 522)
+            {
+                subtractor = 522;
+                patternLength = 25;
+            }
             else
             {
                 std::stringstream warning;
@@ -104,13 +109,33 @@ namespace ABME
         }
 
 
-        inline PatternMap GeneratePatternMap()
+        inline PatternMap GenerateShortPatternMap()
         {
+            std::cout << "Generating short patterns up to 3x3. ";
+
             PatternMap map;
-            for (int i = 0; i < GlobalSettings::NumGenes; ++i)
+            for (int i = 0; i < 522; ++i)
             {
                 map[GetParentPattern(i)] = i;
             }
+
+            std::cout << "Finished.\n";
+
+            return map;
+        }
+
+        
+        inline PatternMap GenerateLongPatternMap()
+        {
+            std::cout << "Generating 5x5 patterns. This may take a while... ";
+
+            PatternMap map;
+            for (int i = 522; i < GlobalSettings::NumGenes; ++i)
+            {
+                map[GetParentPattern(i)] = i;
+            }
+
+            std::cout << "Finished.\n";
 
             return map;
         }
@@ -271,25 +296,31 @@ namespace ABME
         }
 
 
-        /// Returns a map of gene counts.
-        inline std::set<std::pair<Gene, int>, GeneCountComparator> GeneStatistics(std::vector<Chromosome>& chromosomes)
+        /// Returns a set (ordered) of tuples with (gene index, gene counts, percentage that are on, i.e. '1')
+        inline std::set<std::tuple<int, int, float>, GeneCountComparator> GeneStatistics(std::vector<Chromosome>& chromosomes)
         {
-            std::map<Gene, int> geneCounts;
-            
+            std::set<std::tuple<int, int, float>, GeneCountComparator> genePool;
+            std::map<int, int> onGenes;
+            std::map<int, int> offGenes;
+            std::set<int> allGenes;
+
             for (auto& chr : chromosomes)
             {
                 for (auto&[index, value] : chr)
                 {
-                    ++geneCounts[std::pair(index, value)];
+                    if (value == '1') ++onGenes[index];
+                    else ++offGenes[index];
+
+                    allGenes.insert(index);
                 }
             }
 
-            // Convert the dictionary to a set ordered by its counts.
-            std::set<std::pair<Gene, int>, GeneCountComparator> genePool;
-
-            for (auto&[gene, count] : geneCounts)
+            for (auto& geneIndex : allGenes)
             {
-                genePool.insert(std::pair(gene, count));
+                int count = onGenes[geneIndex] + offGenes[geneIndex];
+                float onPercentage = 100 * float(onGenes[geneIndex]) / count;
+                
+                genePool.insert(std::tuple(geneIndex, count, onPercentage));
             }
 
             return genePool;

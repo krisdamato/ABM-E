@@ -24,6 +24,41 @@ namespace ABME
     }
 
 
+    void Environment::AddPopulation(int numIndividuals, int geneticLength, bool useSameGeneIndices, bool useSimpleGenesFirst)
+    {
+        std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - GlobalSettings::BarcodeSize);
+        std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - GlobalSettings::BarcodeSize);
+
+        // Create individuals.
+        auto prototype = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+        for (auto i = 0; i < numIndividuals; ++i)
+        {
+            GeneticCode<ushort> geneticCode;
+            geneticCode.ActiveGenes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototype) : Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+
+            Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
+        }
+
+        // Assign random positions and set balances to 1 
+        // so that every individual returns one food tile to the
+        // environment.
+        for (auto& individual : Individuals)
+        {
+            auto newX = GlobalSettings::DistanceStep * (distWidth(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+            auto newY = GlobalSettings::DistanceStep * (distHeight(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+
+            while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
+            {
+                newX = GlobalSettings::DistanceStep * (distWidth(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+                newY = GlobalSettings::DistanceStep * (distHeight(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
+            }
+
+            individual->X = newX;
+            individual->Y = newY;
+        }
+    }
+
+
     void Environment::AddRegion(cv::Rect region, float probability)
     {
         Regions.push_back(region);
@@ -149,7 +184,7 @@ namespace ABME
         case DrawMode::DrawModeLength:
         {
             // Get chromosome length range.
-            size_t min = 522;
+            size_t min = INT_MAX;
             size_t max = 0;
             for (auto& ind : Individuals)
             {
@@ -282,38 +317,9 @@ namespace ABME
 
     void Environment::Initialise(std::map<int, int> lengthCounts, bool useSameGeneIndices, bool useSimpleGenesFirst)
     {
-        std::uniform_int_distribution<std::mt19937::result_type> distWidth(0, Map.cols - GlobalSettings::BarcodeSize);
-        std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - GlobalSettings::BarcodeSize);
-
-        // Create individuals.
         for (auto&[length, count] : lengthCounts)
         {
-            auto prototype = Helpers::GenerateRandomChromosome(length, useSimpleGenesFirst);
-            for (auto i = 0; i < count; ++i)
-            {
-                GeneticCode geneticCode;
-                geneticCode.ActiveGenes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototype) : Helpers::GenerateRandomChromosome(length, useSimpleGenesFirst);
-
-                Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
-            }
-        }
-
-        // Assign random positions and set balances to 1 
-        // so that every individual returns one food tile to the
-        // environment.
-        for (auto& individual : Individuals)
-        {
-            auto newX = GlobalSettings::DistanceStep * (distWidth(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
-            auto newY = GlobalSettings::DistanceStep * (distHeight(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
-
-            while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
-            {
-                newX = GlobalSettings::DistanceStep * (distWidth(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
-                newY = GlobalSettings::DistanceStep * (distHeight(GlobalSettings::RNG) / GlobalSettings::DistanceStep);
-            }
-
-            individual->X = newX;
-            individual->Y = newY;
+            AddPopulation(count, length, useSameGeneIndices, useSimpleGenesFirst);
         }
 
         // Initialise active tiles.
@@ -335,6 +341,90 @@ namespace ABME
         {
             Individuals.push_back(std::unique_ptr<Individual>(ind->Clone(true)));
         }
+    }
+
+
+    void Environment::RunMetrics(int& killed, int& born, int& diedNaturally) const
+    {
+        static int i = 0;
+        
+        if (i % 100 == 0)
+        {
+            auto& logger = Logger::Instance();
+
+            std::setprecision(4);
+
+            std::stringstream log;
+            log << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
+            std::map<int, int> genePool;
+
+            float averageAge = 0.f;
+            double averageMutationRateBitFlip = 0;
+            double averageMutationRateInsertion = 0;
+            double averageMutationRateDeletion = 0;
+            double averageMutationRateMeta = 0;
+            double averageMutationRateTrans = 0;
+            for (auto& individual : Individuals)
+            {
+                genePool[individual->ItsGeneticCode.Length()]++;
+                averageAge += individual->Age;
+                averageMutationRateBitFlip += individual->ItsGeneticCode.GetFlipMutationRate();
+                averageMutationRateInsertion += individual->ItsGeneticCode.GetInsertionMutationRate();
+                averageMutationRateDeletion += individual->ItsGeneticCode.GetDeletionMutationRate();
+                averageMutationRateTrans += individual->ItsGeneticCode.GetTransMutationRate();
+                averageMutationRateMeta += individual->ItsGeneticCode.GetMetaMutationRate();
+            }
+            averageAge /= Individuals.size();
+            averageMutationRateBitFlip /= Individuals.size();
+            averageMutationRateInsertion /= Individuals.size();
+            averageMutationRateDeletion /= Individuals.size();
+            averageMutationRateTrans /= Individuals.size();
+            averageMutationRateMeta /= Individuals.size();
+
+            float averageLength = 0.f;
+            for (auto&[length, count] : genePool)
+            {
+                log << "Chromosome length " << length << ": " << count << " individuals.\n";
+                averageLength += length * count;
+            }
+            if (Individuals.size() > 0) averageLength /= Individuals.size();
+            log << "\nAvg. chromosome length: " << averageLength << std::endl;
+            log << "\nAvg. age: " << averageAge << std::endl;
+            log << "\nAvg. mut. rate (flip): " << averageMutationRateBitFlip << std::endl;
+            log << "Avg. mut. rate (ins.): " << averageMutationRateInsertion << std::endl;
+            log << "Avg. mut. rate (del.): " << averageMutationRateDeletion << std::endl;
+            log << "Avg. mut. rate (trans.): " << averageMutationRateTrans << std::endl;
+            log << "Avg. mut. rate (meta): " << averageMutationRateMeta << std::endl;
+
+            // Report most popular chromosome.
+            std::vector<Chromosome> chromosomes;
+            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.ActiveGenes);
+
+            auto geneCountSet = Helpers::GeneStatistics(chromosomes);
+
+            log << "Most common genes:\n";
+            std::setprecision(3);
+            int j = 0;
+            for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 15; ++it, ++j)
+            {
+                log << "[" << std::get<1>(*it) << "] " << std::get<0>(*it) << ":" << std::get<2>(*it) << std::endl;
+            }
+            log << std::endl;
+
+            if (Captured.size() > 0)
+            {
+                log << "\nPopulation captured. Press r to release.\n";
+            }
+
+            born = 0;
+            killed = 0;
+            diedNaturally = 0;
+
+            // Log to console and output file.
+            logger << log.str();
+        }
+
+        i++;
     }
 
 
@@ -380,13 +470,11 @@ namespace ABME
 
     void Environment::Update()
     {
-        static int i = 0;
-        static int born = 0;
-        static int killed = 0;
+        static int killed = 0; 
+        static int born = 0; 
         static int diedNaturally = 0;
 
         std::uniform_int_distribution<std::mt19937::result_type> dist(0, 2 * GlobalSettings::DistanceStep);
-        auto& logger = Logger::Instance();
 
         // Take an additive snapshot of the world + barcodes.
         Snapshot = Map.clone();
@@ -489,82 +577,11 @@ namespace ABME
 
         ReplenishTiles();
 
-        if (i % 100 == 0)
-        {
-            std::setprecision(4);
-
-            std::stringstream log;
-            log << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
-            std::map<int, int> genePool;
-            
-            float averageAge = 0.f;
-            double averageMutationRateBitFlip = 0;
-            double averageMutationRateInsertion = 0;
-            double averageMutationRateDeletion = 0;
-            double averageMutationRateMeta = 0;
-            double averageMutationRateTrans = 0;
-            for (auto& individual : Individuals)
-            {
-                genePool[individual->ItsGeneticCode.Length()]++;
-                averageAge += individual->Age;
-                averageMutationRateBitFlip += individual->ItsGeneticCode.GetFlipMutationRate();
-                averageMutationRateInsertion += individual->ItsGeneticCode.GetInsertionMutationRate();
-                averageMutationRateDeletion += individual->ItsGeneticCode.GetDeletionMutationRate();
-                averageMutationRateTrans += individual->ItsGeneticCode.GetTransMutationRate();
-                averageMutationRateMeta += individual->ItsGeneticCode.GetMetaMutationRate();
-            }
-            averageAge /= Individuals.size();
-            averageMutationRateBitFlip /= Individuals.size();
-            averageMutationRateInsertion /= Individuals.size();
-            averageMutationRateDeletion /= Individuals.size();
-            averageMutationRateTrans /= Individuals.size();
-            averageMutationRateMeta /= Individuals.size();
-
-            float averageLength = 0.f;
-            for (auto&[length, count] : genePool)
-            {
-                log << "Chromosome length " << length << ": " << count << " individuals.\n";
-                averageLength += length * count;
-            }
-            if (Individuals.size() > 0) averageLength /= Individuals.size();
-            log << "\nAvg. chromosome length: " << averageLength << std::endl;
-            log << "\nAvg. age: " << averageAge << std::endl;
-            log << "\nAvg. mut. rate (flip): " << averageMutationRateBitFlip << std::endl;
-            log << "Avg. mut. rate (ins.): " << averageMutationRateInsertion << std::endl;
-            log << "Avg. mut. rate (del.): " << averageMutationRateDeletion << std::endl;
-            log << "Avg. mut. rate (trans.): " << averageMutationRateTrans << std::endl;
-            log << "Avg. mut. rate (meta): " << averageMutationRateMeta << std::endl;
-
-            // Report most popular chromosome.
-            std::vector<Chromosome> chromosomes;
-            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.ActiveGenes);
-
-            auto geneCountSet = Helpers::GeneStatistics(chromosomes);
-
-            log << "Most common genes:\n";
-            int j = 0;
-            for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 5; ++it, ++j)
-            {
-                log << "[" << it->second << "] " << it->first.first << ":" << it->first.second << std::endl;
-            }
-            log << std::endl;
-
-            if (Captured.size() > 0)
-            {
-                log << "\nPopulation captured. Press r to release.\n";
-            }
-
-            born = 0;
-            killed = 0;
-            diedNaturally = 0;
-
-            // Log to console and output file.
-            logger << log.str();
-        }
+        // Log some interesting metrics.
+        RunMetrics(killed, born, diedNaturally);
 
         // Clear colocations.
         Colocations.clear();
-        i++;
     }
 
 

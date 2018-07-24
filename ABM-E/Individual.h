@@ -17,7 +17,7 @@ namespace ABME
     class Individual
     {
     public:
-        Individual(Environment& environment, GeneticCode chromosome);
+        Individual(Environment& environment, GeneticCode<ushort> chromosome);
         ~Individual();
 
         bool AddDropTile(int numToTake);
@@ -36,7 +36,7 @@ namespace ABME
         static bool DetectCollision(const cv::Rect& thisRect, std::vector<cv::Rect>& regions);
 
         Environment& ItsEnvironment;
-        GeneticCode ItsGeneticCode;
+        GeneticCode<ushort> ItsGeneticCode;
         std::unique_ptr<Barcode> CurrentBarcode;
 
         int Age = 0;

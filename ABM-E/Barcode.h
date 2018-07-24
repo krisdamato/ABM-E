@@ -22,19 +22,20 @@ namespace ABME
         void Intersect(const Barcode& rhs);
         void SetStringRepresentation(const std::string& rep);
         void Subtract(const Barcode& rhs);
-        void Update(bool usePatternMap);
+        void Update(bool usePatternMap, bool useLongPatterns);
 
     protected:
         inline void Update1D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto = nullptr);
         inline void Update2D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto = nullptr);
-        inline void Update2DWithPatternMap(std::string& oldBarcode);
+        inline void Update2DWithPatternMap(std::string& oldBarcode, int patternWidth);
 
         Chromosome& chromosome;
         std::string barcode;
         int width;
         int height;
 
-        static PatternMap GenePatternMap;
+        static PatternMap ShortGenePatternMap;
+        static PatternMap LongGenePatternMap;
         static const int CellSize = 16;
     };
 }

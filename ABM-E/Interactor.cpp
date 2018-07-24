@@ -42,8 +42,8 @@ namespace ABME
             secondCloneNext.Subtract(firstClone);
 
             // Update barcodes.
-            firstCloneNext.Update(true);
-            secondCloneNext.Update(true);
+            firstCloneNext.Update(true, first.ItsGeneticCode.HasLargePatterns);
+            secondCloneNext.Update(true, second.ItsGeneticCode.HasLargePatterns);
 
             // Replace barcodes of the next iteration.
             firstClone.SetStringRepresentation(firstCloneNext.GetStringRepresentation());
@@ -53,12 +53,12 @@ namespace ABME
             firstCount = firstClone.CountLiveCells();
             secondCount = secondClone.CountLiveCells();
 
-            if (firstCount == 0 || firstCount == 256 || secondCount == 0 || secondCount == 256) break;
+            if (firstCount == 0 || firstCount == std::pow(GlobalSettings::BarcodeSize, 2) || secondCount == 0 || secondCount == std::pow(GlobalSettings::BarcodeSize, 2)) break;
         }
 
         // Kill any that have zero cells.
-        if (firstCount == 0 || firstCount == 256) first.Kill();
-        if (secondCount == 0 || secondCount == 256) second.Kill();
+        if (firstCount == 0 || firstCount == std::pow(GlobalSettings::BarcodeSize, 2)) first.Kill();
+        if (secondCount == 0 || secondCount == std::pow(GlobalSettings::BarcodeSize, 2)) second.Kill();
 
         // If chromosomes have to be equal length, check to make sure.
         if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsGeneticCode.Length() != second.ItsGeneticCode.Length()) return nullptr;
@@ -85,27 +85,28 @@ namespace ABME
         // Create an empty chromosome.
         auto& firstGenetics = first.ItsGeneticCode;
         auto& secondGenetics = second.ItsGeneticCode;
-        GeneticCode newGeneticCode;
+        GeneticCode<ushort> newGeneticCode;
 
         if (GlobalSettings::MutationRatesEvolve)
         {
             // Crossover metamutation parameters.
-            newGeneticCode.FlipMutationRate = Helpers::Crossover(firstGenetics.FlipMutationRate, secondGenetics.FlipMutationRate, dist);
-            newGeneticCode.InsertionMutationRate = Helpers::Crossover(firstGenetics.InsertionMutationRate, secondGenetics.InsertionMutationRate, dist);
-            newGeneticCode.DeletionMutationRate = Helpers::Crossover(firstGenetics.DeletionMutationRate, secondGenetics.DeletionMutationRate, dist);
-            newGeneticCode.TransMutationRate = Helpers::Crossover(firstGenetics.TransMutationRate, secondGenetics.TransMutationRate, dist);
-            newGeneticCode.MetaMutationRate = Helpers::Crossover(firstGenetics.MetaMutationRate, secondGenetics.MetaMutationRate, dist);
+            newGeneticCode.GetFlipMutationParameter() = Helpers::Crossover(firstGenetics.GetFlipMutationParameter(), secondGenetics.GetFlipMutationParameter(), dist);
+            newGeneticCode.GetInsertionMutationParameter() = Helpers::Crossover(firstGenetics.GetInsertionMutationParameter(), secondGenetics.GetInsertionMutationParameter(), dist);
+            if (!GlobalSettings::UseSingleStructuralMutationRate) newGeneticCode.GetDeletionMutationParameter() = Helpers::Crossover(firstGenetics.GetDeletionMutationParameter(), secondGenetics.GetDeletionMutationParameter(), dist);
+            newGeneticCode.GetTransMutationParameter() = Helpers::Crossover(firstGenetics.GetTransMutationParameter(), secondGenetics.GetTransMutationParameter(), dist);
+            newGeneticCode.GetMetaMutationParameter() = Helpers::Crossover(firstGenetics.GetMetaMutationParameter(), secondGenetics.GetMetaMutationParameter(), dist);
 
             // Mutate mutation parameters.
-            newGeneticCode.MetaMutationRate = Helpers::BitFlip(newGeneticCode.MetaMutationRate, dist, newGeneticCode.GetMetaMutationRate());
-            newGeneticCode.FlipMutationRate = Helpers::BitFlip(newGeneticCode.FlipMutationRate, dist, newGeneticCode.GetMetaMutationRate());
-            newGeneticCode.InsertionMutationRate = Helpers::BitFlip(newGeneticCode.InsertionMutationRate, dist, newGeneticCode.GetMetaMutationRate());
-            newGeneticCode.DeletionMutationRate = Helpers::BitFlip(newGeneticCode.DeletionMutationRate, dist, newGeneticCode.GetMetaMutationRate());
-            newGeneticCode.TransMutationRate = Helpers::BitFlip(newGeneticCode.TransMutationRate, dist, newGeneticCode.GetMetaMutationRate());
+            Helpers::BitFlip(newGeneticCode.GetMetaMutationParameter(), dist, newGeneticCode.GetMetaMutationRate());
+            Helpers::BitFlip(newGeneticCode.GetFlipMutationParameter(), dist, newGeneticCode.GetMetaMutationRate());
+            Helpers::BitFlip(newGeneticCode.GetInsertionMutationParameter(), dist, newGeneticCode.GetMetaMutationRate());
+            if (!GlobalSettings::UseSingleStructuralMutationRate) Helpers::BitFlip(newGeneticCode.GetDeletionMutationParameter(), dist, newGeneticCode.GetMetaMutationRate());
+            Helpers::BitFlip(newGeneticCode.GetTransMutationParameter(), dist, newGeneticCode.GetMetaMutationRate());
         }
         
         // Pick a random length (from the two).
-        int newLength = dist(GlobalSettings::RNG) < 0.5 ? firstGenetics.Length() : secondGenetics.Length();
+        std::uniform_int_distribution<std::mt19937::result_type> distLength(std::min(firstGenetics.Length(), secondGenetics.Length()), std::max(firstGenetics.Length(), secondGenetics.Length()));
+        int newLength = distLength(GlobalSettings::RNG);
 
         // Convert chromosomes to vectors of gene indices and values.
         std::vector<int> geneIndices;
@@ -129,6 +130,7 @@ namespace ABME
             if (newChromosome.count(geneIndex) == 0)
             {
                 newChromosome[geneIndex] = geneValue;
+                if (geneIndex >= 522) newGeneticCode.HasLargePatterns = true;
                 ++i;
             }
         }
@@ -146,6 +148,7 @@ namespace ABME
             
             uchar geneValue = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
             newChromosome[geneIndex] = geneValue;
+            if (geneIndex >= 522) newGeneticCode.HasLargePatterns = true;
         }
 
         // Transmutation (replacement gene with new value).
@@ -168,6 +171,7 @@ namespace ABME
                         geneIndex = distGeneIndex(GlobalSettings::RNG);
                         done = newChromosome.count(geneIndex) == 0;
                     }
+                    if (geneIndex >= 522) newGeneticCode.HasLargePatterns = true;
                     transChromosome[geneIndex] = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
                 }
                 else

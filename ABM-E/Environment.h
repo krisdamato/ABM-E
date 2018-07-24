@@ -28,6 +28,7 @@ namespace ABME
 
         Environment(int width, int height);
 
+        void AddPopulation(int numIndividuals, int geneticLength, bool useSameGeneIndices, bool useSimpleGenesFirst);
         void AddRegion(cv::Rect region, float activeProbability);
         void CapturePopulation();
         int CauseTileCrisis(int numTilesToAdd);
@@ -41,6 +42,7 @@ namespace ABME
         void InitialiseTiles();
         void RegisterActiveTileAddition(int regionIndex, int numTiles);
         void ReleasePopulation();
+        void RunMetrics(int& killed, int& born, int& diedNaturally) const;
         void ToggleDrawMode();
         void Update();
 

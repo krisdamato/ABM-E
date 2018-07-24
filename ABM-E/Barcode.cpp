@@ -9,7 +9,8 @@ namespace ABME
 {
     using namespace cv;
 
-    PatternMap Barcode::GenePatternMap = Helpers::GeneratePatternMap();
+    PatternMap Barcode::ShortGenePatternMap = Helpers::GenerateShortPatternMap();
+    PatternMap Barcode::LongGenePatternMap = Helpers::GenerateLongPatternMap();
 
 
     Barcode::Barcode(Chromosome& chromosome, int width, int height) : chromosome(chromosome), width(width), height(height)
@@ -225,7 +226,7 @@ namespace ABME
     
     /// Updates the barcode pattern by one step.
     /// Note: only allows up to 3x3 patterns.
-    void Barcode::Update(bool usePatternMap)
+    void Barcode::Update(bool usePatternMap, bool useLongPatterns)
     {
         auto oldBarcode = barcode;
 
@@ -248,8 +249,11 @@ namespace ABME
                 Update1D(pattern, val, oldBarcode);
             }
 
-            // Do the 2D genes together.
-            Update2DWithPatternMap(oldBarcode);
+            // Do the 3x3 2D genes next.
+            Update2DWithPatternMap(oldBarcode, 3);
+
+            // Do the 5x5 2D genes next...
+            if (useLongPatterns) Update2DWithPatternMap(oldBarcode, 5);
         }
     }
 
@@ -332,24 +336,33 @@ namespace ABME
     }
 
 
-    void Barcode::Update2DWithPatternMap(std::string& oldBarcode)
+    void Barcode::Update2DWithPatternMap(std::string& oldBarcode, int patternWidth)
     {
+        auto& map = patternWidth <= 3 ? ShortGenePatternMap : LongGenePatternMap;
+
+        const int edgeLimit = patternWidth - 1;
+        const int replaceOffset = (patternWidth - 1) / 2;
+
 #pragma omp parallel for
-        for (int j = 0; j < height - 2; ++j)
+        for (int j = 0; j < height - edgeLimit; ++j)
         {
-            for (int i = 0; i < width - 2; ++i)
+            for (int i = 0; i < width - edgeLimit; ++i)
             {
                 // Get the pattern at this position of the barcode.
-                auto subBarcode = oldBarcode.substr(j * width + i, 3) + oldBarcode.substr((j + 1) * width + i, 3) + oldBarcode.substr((j + 2) * width + i, 3);
+                std::string subBarcode;
+                for (auto k = j; k < j + patternWidth; ++k)
+                {
+                    subBarcode += oldBarcode.substr(k * width + i, patternWidth);
+                }
 
                 // Find which gene this would require.
-                auto geneIndex = GenePatternMap[subBarcode];
+                auto& geneIndex = map[subBarcode];
 
                 // Do we have this gene?
                 if (chromosome.count(geneIndex) == 0) continue;
 
                 // Replace at the right position.
-                barcode[width * (j + 1) + i + 1] = chromosome[geneIndex];
+                barcode[width * (j + replaceOffset) + i + replaceOffset] = chromosome[geneIndex];
             }
         }
     }

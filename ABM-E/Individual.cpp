@@ -8,7 +8,7 @@ namespace ABME
 {
     using namespace cv;
 
-    Individual::Individual(Environment& environment, GeneticCode geneticCode) : ItsEnvironment(environment), ItsGeneticCode(geneticCode)
+    Individual::Individual(Environment& environment, GeneticCode<ushort> geneticCode) : ItsEnvironment(environment), ItsGeneticCode(geneticCode)
     {
         CurrentBarcode = std::make_unique<Barcode>(ItsGeneticCode.ActiveGenes, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
         Balances = std::vector<int>(ItsEnvironment.GetRegions().size());
@@ -142,7 +142,7 @@ namespace ABME
         CurrentBarcode->Input(interactionRegion);
 
         // Update barcode once.
-        CurrentBarcode->Update(true);
+        CurrentBarcode->Update(true, ItsGeneticCode.HasLargePatterns);
 
         // Calculate movement and consumption.
         Vec2i movement; int cellsActive = 0;
