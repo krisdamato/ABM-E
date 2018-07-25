@@ -17,7 +17,7 @@
 namespace ABME
 {
     using Gene = std::pair<int, uchar>;
-    using Chromosome = std::map<int, uchar>;
+    using GeneSet = std::map<int, uchar>;
     using PatternMap = std::map<std::string, int>;
 
     class BadGeneIndexException: std::runtime_error
@@ -130,6 +130,7 @@ namespace ABME
             std::cout << "Generating 5x5 patterns. This may take a while... ";
 
             PatternMap map;
+#pragma omp parallel for
             for (int i = 522; i < GlobalSettings::NumGenes; ++i)
             {
                 map[GetParentPattern(i)] = i;
@@ -160,7 +161,7 @@ namespace ABME
 
 
         /// Prints rules, given a chromosome of genes.
-        inline void PrintRulesFromChromosome(Chromosome chromosome)
+        inline void PrintRulesFromChromosome(GeneSet chromosome)
         {
             for (auto const& [key, val] : chromosome)
             {
@@ -175,58 +176,28 @@ namespace ABME
 
 
         /// Generates a random chromosome of the requested length.
-        inline Chromosome GenerateRandomChromosome(int length, bool simpleGenesFirst)
+        inline GeneSet GenerateRandomChromosome(int length, bool simpleGenesFirst)
         {
             std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
 
-            Chromosome chromosome;
-            /// Either chose gene indices randomly...
-            if (!simpleGenesFirst)
+            GeneSet chromosome;
+            auto geneIndices = GlobalSettings::ShuffleIndices(length, simpleGenesFirst);
+            for (auto& i : geneIndices)
             {
-                std::uniform_int_distribution<std::mt19937::result_type> distIndex(0, GlobalSettings::NumGenes - 1);
-
-                for (auto i = 0; i < length;)
-                {
-                    int geneIndex = distIndex(GlobalSettings::RNG);
-                    if (chromosome.count(geneIndex) == 0)
-                    {
-                        chromosome[geneIndex] = dist1(GlobalSettings::RNG) == 1 ? '1' : '0';
-                        ++i;
-                    }
-                }
+                chromosome[i] = dist1(GlobalSettings::RNG) == 1 ? '1' : '0';
             }
-            /// ...or start in order of complexity.
-            else
-            {
-                // Chromosomes of up to length 2, choose randomly from the first
-                // 2 possible genes. Chromosomes up to length 10 pick both of the
-                // first two genes, and randomly from the set of next 8 genes. 
-                // Finally, chromosomes up to length 522 pick all genes up to length
-                // 10 and randomly from the rest.
-                auto geneIndices = std::vector<int>(GlobalSettings::NumGenes);
-                std::iota(std::begin(geneIndices), std::end(geneIndices), 0);
-
-                std::shuffle(geneIndices.begin(), geneIndices.begin() + 2, GlobalSettings::RNG);
-                std::shuffle(geneIndices.begin() + 2, geneIndices.begin() + 10, GlobalSettings::RNG);
-                std::shuffle(geneIndices.begin() + 10, geneIndices.begin() + 522, GlobalSettings::RNG);
-
-                for (auto i = 0; i < length; ++i)
-                {
-                    int geneIndex = geneIndices[i];
-                    chromosome[geneIndex] = dist1(GlobalSettings::RNG) == 1 ? '1' : '0';
-                }
-            }
+            
 
             return chromosome;
         }
 
 
         /// Copies the chromosome gene indices but changes the values.
-        inline Chromosome GenerateRandomChromosome(Chromosome& prototype)
+        inline GeneSet GenerateRandomChromosome(GeneSet& prototype)
         {
             std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
 
-            Chromosome chromosome;
+            GeneSet chromosome;
             for (auto&[index, value] : prototype)
             {
                 chromosome[index] = dist1(GlobalSettings::RNG) == 1 ? '1' : '0';
@@ -237,7 +208,7 @@ namespace ABME
 
 
         /// Converts a chromosome into two vectors.
-        inline void ConvertChromosomeToVectors(Chromosome& chromosome, std::vector<int>& geneIndices, std::vector<uchar>& geneValues)
+        inline void ConvertChromosomeToVectors(GeneSet& chromosome, std::vector<int>& geneIndices, std::vector<uchar>& geneValues)
         {
             for (auto&[index, value] : chromosome)
             {
@@ -248,9 +219,9 @@ namespace ABME
 
 
         /// Counts chromosomes.
-        inline std::map<Chromosome, int> ChromosomeCounts(std::vector<Chromosome>& chromosomes)
+        inline std::map<GeneSet, int> ChromosomeCounts(std::vector<GeneSet>& chromosomes)
         {
-            std::map<Chromosome, int> counts;
+            std::map<GeneSet, int> counts;
             for (auto& chr : chromosomes)
             {
                 ++counts[chr];
@@ -261,12 +232,12 @@ namespace ABME
 
 
         /// Counts chromosomes.
-        inline std::map<Chromosome, int> ChromosomeTypeCounts(std::vector<Chromosome>& chromosomes)
+        inline std::map<GeneSet, int> ChromosomeTypeCounts(std::vector<GeneSet>& chromosomes)
         {
-            std::map<Chromosome, int> counts;
+            std::map<GeneSet, int> counts;
             for (auto& chr : chromosomes)
             {
-                Chromosome emptyChromosome;
+                GeneSet emptyChromosome;
                 for (auto&[index, count] : chr) emptyChromosome[index] = 0;
                 ++counts[emptyChromosome];
             }
@@ -276,12 +247,12 @@ namespace ABME
 
 
         /// Returns the most popular chromosome and its count.
-        inline std::pair<Chromosome, int> MostPopularChromosome(std::vector<Chromosome>& chromosomes, bool typeOnly = false)
+        inline std::pair<GeneSet, int> MostPopularChromosome(std::vector<GeneSet>& chromosomes, bool typeOnly = false)
         {
             // Get counts.
             auto countMap = typeOnly ? ChromosomeTypeCounts(chromosomes) : ChromosomeCounts(chromosomes);
 
-            Chromosome mostPopular;
+            GeneSet mostPopular;
             int maximum = 0;
             for (auto&[chr, count] : countMap)
             {
@@ -297,7 +268,7 @@ namespace ABME
 
 
         /// Returns a set (ordered) of tuples with (gene index, gene counts, percentage that are on, i.e. '1')
-        inline std::set<std::tuple<int, int, float>, GeneCountComparator> GeneStatistics(std::vector<Chromosome>& chromosomes)
+        inline std::set<std::tuple<int, int, float>, GeneCountComparator> GeneStatistics(std::vector<GeneSet>& chromosomes)
         {
             std::set<std::tuple<int, int, float>, GeneCountComparator> genePool;
             std::map<int, int> onGenes;
@@ -328,7 +299,7 @@ namespace ABME
 
 
         /// Converts a chromosome to a string representation.
-        inline std::string ConvertChromosomeToString(Chromosome& chromosome, bool indicesOnly)
+        inline std::string ConvertChromosomeToString(GeneSet& chromosome, bool indicesOnly)
         {
             std::stringstream chrString;
             chrString << "|";

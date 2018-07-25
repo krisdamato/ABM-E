@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "GeneticCode.h"
 
 namespace ABME
 {
@@ -15,5 +16,7 @@ namespace ABME
     protected:
         static Individual* Interact(Individual& first, Individual& second);
         static Individual* Reproduce(Individual& first, Individual& second);
+        
+        template <typename T> static Chromosome<T> RecombineChromosomes(Chromosome<T>& first, Chromosome<T>& second, std::uniform_real_distribution<> dist, double metaMutationRate);
     };
 }

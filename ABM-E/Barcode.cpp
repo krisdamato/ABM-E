@@ -13,14 +13,14 @@ namespace ABME
     PatternMap Barcode::LongGenePatternMap = Helpers::GenerateLongPatternMap();
 
 
-    Barcode::Barcode(Chromosome& chromosome, int width, int height) : chromosome(chromosome), width(width), height(height)
+    Barcode::Barcode(GeneSet& behaviourGenes, int width, int height) : behaviourGenes(behaviourGenes), width(width), height(height)
     {
         // Create a string to represent the barcode with the proper length.
         barcode = std::string(width * height, '0');
     }
 
 
-    Barcode::Barcode(const Barcode& rhs) : chromosome(rhs.chromosome), barcode(rhs.barcode), width(rhs.width), height(rhs.height)
+    Barcode::Barcode(const Barcode& rhs) : behaviourGenes(rhs.behaviourGenes), barcode(rhs.barcode), width(rhs.width), height(rhs.height)
     {
         
     }
@@ -232,7 +232,7 @@ namespace ABME
 
         if (!usePatternMap)
         {
-            for (auto&[key, val] : chromosome)
+            for (auto&[key, val] : behaviourGenes)
             {
                 std::string pattern = Helpers::GetParentPattern(key);
                 if (pattern.size() <= 3) Update1D(pattern, val, oldBarcode);
@@ -242,7 +242,7 @@ namespace ABME
         else
         {
             // Do the 1D genes first.
-            for (auto&[key, val] : chromosome)
+            for (auto&[key, val] : behaviourGenes)
             {
                 if (key >= 10) break;
                 std::string pattern = Helpers::GetParentPattern(key);
@@ -409,10 +409,10 @@ namespace ABME
                 auto& geneIndex = map[subBarcode];
 
                 // Do we have this gene?
-                if (chromosome.count(geneIndex) == 0) continue;
+                if (behaviourGenes.count(geneIndex) == 0) continue;
 
                 // Replace at the right position.
-                barcode[width * (j + replaceOffset) + i + replaceOffset] = chromosome[geneIndex];
+                barcode[width * (j + replaceOffset) + i + replaceOffset] = behaviourGenes[geneIndex];
             }
         }
     }

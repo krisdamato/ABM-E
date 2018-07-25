@@ -10,7 +10,7 @@ namespace ABME
 
     Individual::Individual(Environment& environment, GeneticCode<ushort> geneticCode) : ItsEnvironment(environment), ItsGeneticCode(geneticCode)
     {
-        CurrentBarcode = std::make_unique<Barcode>(ItsGeneticCode.ActiveGenes, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+        CurrentBarcode = std::make_unique<Barcode>(ItsGeneticCode.BehaviourGenes.Genes, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
         Balances = std::vector<int>(ItsEnvironment.GetRegions().size());
     }
 
@@ -142,7 +142,10 @@ namespace ABME
         CurrentBarcode->Input(interactionRegion);
 
         // Update barcode once.
-        CurrentBarcode->Update(true, ItsGeneticCode.HasLargePatterns);
+        CurrentBarcode->Update(true, ItsGeneticCode.BehaviourGenes.HasLargePatterns);
+
+        // Update world.
+
 
         // Calculate movement and consumption.
         Vec2i movement; int cellsActive = 0;
@@ -153,7 +156,7 @@ namespace ABME
 
         // Update live status.
         // An individual dies if it has no food or all or no cell is active.
-        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTiles)
+        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTiles || Age >= ItsGeneticCode.ProgrammedLifespan)
         {
             Kill();
             return;

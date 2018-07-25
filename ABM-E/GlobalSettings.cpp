@@ -14,8 +14,8 @@ namespace ABME
     bool GlobalSettings::TileDepositsEqualDifference = false;
     bool GlobalSettings::UseSingleStructuralMutationRate = false;
     bool GlobalSettings::MutationRatesEvolve = false;
-    double GlobalSettings::BaseMetaMutationRate = 0.001;
-    const double GlobalSettings::WorldUpdateProbability = 0.1;
+    double GlobalSettings::BaseMetaMutationRate = 0.0001;
+    const double GlobalSettings::WorldUpdateProbability = 0.01;
 
 
     void GlobalSettings::Initialise(int numThreads)
@@ -26,5 +26,66 @@ namespace ABME
         // Set number of OpenMP threads.
         NumThreads = numThreads;
         omp_set_num_threads(NumThreads);
+    }
+
+
+    std::set<int> GlobalSettings::ShuffleIndices(int numIndices, bool useSimplerGenesFirst)
+    {
+        auto sizes = GetGenePatternCollectionSizes();
+
+        // Chromosomes of up to length 2, choose randomly from the first
+        // 2 possible genes. Chromosomes up to length 10 pick both of the
+        // first two genes, and randomly from the set of next 8 genes. 
+        // Chromosomes up to length 522 pick all genes up to length
+        // 10 and randomly from the rest, etc...
+        std::set<int> newIndices;
+        auto total = 0;
+        auto begin = 0;
+        if (useSimplerGenesFirst)
+        {
+            for (auto& s : sizes)
+            {
+                total += s;
+                if (total < numIndices)
+                {
+                    for (int i = begin; i < total; ++i) newIndices.insert(i);
+                }
+                else
+                {
+                    std::uniform_int_distribution<std::mt19937::result_type> dist(begin, total - 1);
+
+                    while (newIndices.size() < numIndices) newIndices.insert(dist(RNG));
+                }
+
+                begin += total;
+                if (newIndices.size() == numIndices) break;
+            }
+        }
+        else
+        {
+            std::uniform_int_distribution<std::mt19937::result_type> dist(0, NumGenes - 1);
+
+            while (newIndices.size() < numIndices) newIndices.insert(dist(RNG));
+        }
+
+        return newIndices;
+    }
+
+
+    std::vector<int> GlobalSettings::GetGenePatternCollectionSizes()
+    {
+        int total = 0;
+        std::vector<int> numTiles{ 1, 3, 9, 25 };
+        std::vector<int> sizes;
+
+        for (auto n : numTiles)
+        {
+            int newSize = std::powl(2, n);
+            total += newSize;
+            if (total > NumGenes) break;
+            sizes.push_back(newSize);
+        }
+
+        return sizes;
     }
 }

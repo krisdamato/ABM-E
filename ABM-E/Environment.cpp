@@ -30,11 +30,15 @@ namespace ABME
         std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - GlobalSettings::BarcodeSize);
 
         // Create individuals.
-        auto prototype = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+        auto prototypeBehaviour = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+        auto prototypeInteraction = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+
         for (auto i = 0; i < numIndividuals; ++i)
         {
             GeneticCode<ushort> geneticCode;
-            geneticCode.ActiveGenes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototype) : Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+
+            geneticCode.BehaviourGenes.Genes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototypeBehaviour) : Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+            geneticCode.InteractionGenes.Genes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototypeInteraction) : Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
 
             Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
         }
@@ -207,13 +211,13 @@ namespace ABME
             double max = 0.0;
             for (auto& ind : Individuals)
             {
-                min = std::min(min, ind->ItsGeneticCode.GetDeletionMutationRate());
-                max = std::max(max, ind->ItsGeneticCode.GetDeletionMutationRate());
+                min = std::min(min, ind->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate());
             }
 
             for (auto& ind : Individuals)
             {
-                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetDeletionMutationRate() - min) / (max - min) : 128;
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate() - min) / (max - min) : 128;
                 int blueLevel = 255 - redLevel;
                 rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
             }
@@ -226,13 +230,13 @@ namespace ABME
             double max = 0.0;
             for (auto& ind : Individuals)
             {
-                min = std::min(min, ind->ItsGeneticCode.GetFlipMutationRate());
-                max = std::max(max, ind->ItsGeneticCode.GetFlipMutationRate());
+                min = std::min(min, ind->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate());
             }
 
             for (auto& ind : Individuals)
             {
-                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetFlipMutationRate() - min) / (max - min) : 128;
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate() - min) / (max - min) : 128;
                 int blueLevel = 255 - redLevel;
                 rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
             }
@@ -245,13 +249,13 @@ namespace ABME
             double max = 0.0;
             for (auto& ind : Individuals)
             {
-                min = std::min(min, ind->ItsGeneticCode.GetInsertionMutationRate());
-                max = std::max(max, ind->ItsGeneticCode.GetInsertionMutationRate());
+                min = std::min(min, ind->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate());
             }
 
             for (auto& ind : Individuals)
             {
-                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetInsertionMutationRate() - min) / (max - min) : 128;
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate() - min) / (max - min) : 128;
                 int blueLevel = 255 - redLevel;
                 rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
             }
@@ -264,13 +268,13 @@ namespace ABME
             double max = 0.0;
             for (auto& ind : Individuals)
             {
-                min = std::min(min, ind->ItsGeneticCode.GetTransMutationRate());
-                max = std::max(max, ind->ItsGeneticCode.GetTransMutationRate());
+                min = std::min(min, ind->ItsGeneticCode.BehaviourGenes.GetTransMutationRate());
+                max = std::max(max, ind->ItsGeneticCode.BehaviourGenes.GetTransMutationRate());
             }
 
             for (auto& ind : Individuals)
             {
-                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.GetTransMutationRate() - min) / (max - min) : 128;
+                int redLevel = max > min ? 255 * double(ind->ItsGeneticCode.BehaviourGenes.GetTransMutationRate() - min) / (max - min) : 128;
                 int blueLevel = 255 - redLevel;
                 rectangle(drawMap, Rect(ind->X, ind->Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), cv::Scalar(blueLevel, 0, redLevel, 64));
             }
@@ -368,10 +372,10 @@ namespace ABME
             {
                 genePool[individual->ItsGeneticCode.Length()]++;
                 averageAge += individual->Age;
-                averageMutationRateBitFlip += individual->ItsGeneticCode.GetFlipMutationRate();
-                averageMutationRateInsertion += individual->ItsGeneticCode.GetInsertionMutationRate();
-                averageMutationRateDeletion += individual->ItsGeneticCode.GetDeletionMutationRate();
-                averageMutationRateTrans += individual->ItsGeneticCode.GetTransMutationRate();
+                averageMutationRateBitFlip += individual->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate();
+                averageMutationRateInsertion += individual->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate();
+                averageMutationRateDeletion += individual->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate();
+                averageMutationRateTrans += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();
                 averageMutationRateMeta += individual->ItsGeneticCode.GetMetaMutationRate();
             }
             averageAge /= Individuals.size();
@@ -397,8 +401,8 @@ namespace ABME
             log << "Avg. mut. rate (meta): " << averageMutationRateMeta << std::endl;
 
             // Report most popular chromosome.
-            std::vector<Chromosome> chromosomes;
-            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.ActiveGenes);
+            std::vector<GeneSet> chromosomes;
+            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.BehaviourGenes.Genes);
 
             auto geneCountSet = Helpers::GeneStatistics(chromosomes);
 

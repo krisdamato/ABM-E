@@ -1,35 +1,34 @@
 #pragma once
 
-#include <limits>
-#include "Helpers.h"
+#include "Chromosome.h"
 
 namespace ABME
 {
-    template <typename T>
+    template <typename TParam>
     class GeneticCode
     {
     public:
+        inline size_t Length() const
+        {
+            return BehaviourGenes.Genes.size() + InteractionGenes.Genes.size();
+        }
+
+
+        inline TParam& GetFlipMutationParameter()
+        {
+            return FlipMutationRate;
+        }
+
+
+        inline TParam& GetMetaMutationParameter()
+        {
+            return MetaMutationRate;
+        }
+
+
         inline double GetFlipMutationRate() const
         {
             return double(FlipMutationRate) / TMax;
-        }
-
-        
-        inline double GetInsertionMutationRate() const
-        {
-            return double(InsertionMutationRate) / TMax;
-        }
-
-
-        inline double GetDeletionMutationRate() const
-        {
-            return GlobalSettings::UseSingleStructuralMutationRate ? GetInsertionMutationRate() : double(DeletionMutationRate) / TMax;
-        }
-
-
-        inline double GetTransMutationRate() const
-        {
-            return double(TransMutationRate) / TMax;
         }
 
 
@@ -38,51 +37,29 @@ namespace ABME
             return GlobalSettings::BaseMetaMutationRate + double(MetaMutationRate) / TMax;
         }
 
-        
-        inline T& GetFlipMutationParameter()
+
+        inline void SetFlipMutationParameter(const TParam& param)
         {
-            return FlipMutationRate;
+            FlipMutationRate = param;
         }
 
-        
-        inline T& GetInsertionMutationParameter()
+
+        inline void SetMetaMutationParameter(const TParam& param)
         {
-            return InsertionMutationRate;
-        }
-        
-        
-        inline T& GetDeletionMutationParameter()
-        {
-            return GlobalSettings::UseSingleStructuralMutationRate ? InsertionMutationRate : DeletionMutationRate;
-        }
-        
-        
-        inline T& GetTransMutationParameter()
-        {
-            return TransMutationRate;
-        }
-        
-        
-        inline T& GetMetaMutationParameter()
-        {
-            return MetaMutationRate;
-        }
-        
-        
-        inline size_t Length() const
-        {
-            return ActiveGenes.size();
+            MetaMutationRate = param;
         }
 
-        Chromosome ActiveGenes;
-        bool HasLargePatterns = false;
-        static const int TMax = std::numeric_limits<T>::max();
 
-    private:
-        T FlipMutationRate = T(0.01 * TMax); // on T_MAX.
-        T InsertionMutationRate = T(0.01 * TMax); // on T_MAX.
-        T DeletionMutationRate = T(0.01 * TMax); // on T_MAX.
-        T TransMutationRate = T(0.01 * TMax); // on T_MAX.
-        T MetaMutationRate = T(0.005 * TMax); // on T_MAX.
+        Chromosome<TParam> BehaviourGenes;
+        Chromosome<TParam> InteractionGenes;
+
+        TParam ProgrammedLifespan = 50;
+        TParam ReproductiveAge = 5;
+
+        static const int TMax = std::numeric_limits<TParam>::max();
+
+    protected:
+        TParam FlipMutationRate = TParam(0.01 * TMax); // on T_MAX.
+        TParam MetaMutationRate = TParam(0.005 * TMax); // on T_MAX.
     };
 }

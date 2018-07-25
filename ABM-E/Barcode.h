@@ -9,7 +9,7 @@ namespace ABME
     class Barcode
     {
     public:
-        Barcode(Chromosome& chromosome, int width, int height);
+        Barcode(GeneSet& chromosome, int width, int height);
         Barcode(const Barcode& rhs);
 
         void ComputeMetrics(cv::Vec2i& movement, int& cellsActive) const;
@@ -30,7 +30,7 @@ namespace ABME
         inline void Update2D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto = nullptr);
         inline void Update2DWithPatternMap(std::string& oldBarcode, int patternWidth);
 
-        Chromosome& chromosome;
+        GeneSet& behaviourGenes;
         std::string barcode;
         int width;
         int height;
