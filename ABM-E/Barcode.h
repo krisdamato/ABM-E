@@ -35,8 +35,6 @@ namespace ABME
         int width;
         int height;
 
-        static PatternMap ShortGenePatternMap;
-        static PatternMap LongGenePatternMap;
         static const int CellSize = 16;
     };
 }

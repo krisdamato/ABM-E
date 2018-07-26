@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 
     Environment environment(128, 128);
     //environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
-    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.03f);
+    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.08f);
 
     environment.Initialise({ {4, 500}, {5, 500} }, false, true);
 

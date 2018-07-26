@@ -8,10 +8,13 @@ namespace ABME
 {
     using namespace cv;
 
+    PatternMap Individual::ShortGenePatternMap = Helpers::GenerateShortPatternMap();
+    PatternMap Individual::LongGenePatternMap = Helpers::GenerateLongPatternMap();
+
+
     Individual::Individual(Environment& environment, GeneticCode<ushort> geneticCode) : ItsEnvironment(environment), ItsGeneticCode(geneticCode)
     {
         CurrentBarcode = std::make_unique<Barcode>(ItsGeneticCode.BehaviourGenes.Genes, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
-        Balances = std::vector<int>(ItsEnvironment.GetRegions().size());
     }
 
 
@@ -27,33 +30,9 @@ namespace ABME
     }
 
 
-    bool Individual::AddDropTile(int numToTake)
-    {
-        // If it's a "sink"...
-        if (numToTake > 0)
-        {
-            CurrentBarcode->ExtractTiles(ItsEnvironment.GetMap(), X, Y, numToTake, ItsEnvironment.GetRegions(), Balances);
-            if (numToTake > 0) return false;
-        }
-        // Or if it's a "source"...
-        else if (numToTake < 0)
-        {
-            // Return "food" tiles to the environment.
-            CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, numToTake, ItsEnvironment.GetRegions(), Balances, true);
-        }
-
-        return true;
-    }
-
-
     bool Individual::BeBorn()
     {
-        if (AddDropTile(1))
-        {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
 
@@ -63,14 +42,10 @@ namespace ABME
         individual->Age = Age;
         individual->X = X;
         individual->Y = Y;
+        individual->Vitality = Vitality;
 
         // Copy barcode pattern.
         individual->CurrentBarcode->SetStringRepresentation(CurrentBarcode->GetStringRepresentation());
-
-        // Only copy balance if required. When capturing populations,
-        // for instance, balance is best kept 0 so that the overall tile
-        // number does not change.
-        if (!ignoreBalance) individual->Balances = Balances;
 
         return individual;
     }
@@ -101,41 +76,10 @@ namespace ABME
     void Individual::Kill()
     {
         Alive = false;
-        if (GlobalSettings::AllowFreeTileMovement)
-        {
-            auto count = 0;
-
-            // Sum all additions together.
-            for (auto& c : Balances)
-            {
-                count += c;
-            }
-
-            // Drop the tiles where at the individual's active tiles.
-            count = -count;
-            if (count < 0) CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, count, ItsEnvironment.GetRegions(), Balances, true);
-
-            // If there still remain tiles, drop them around the active tiles at the body.
-            if (count < 0) CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, count, ItsEnvironment.GetRegions(), Balances, false);
-            
-            // If at this point, there are still some more to add (or take), drop them in the region.
-            if (count != 0)
-            {
-                int index = Helpers::PointInRegionIndex(Point(X, Y), ItsEnvironment.GetRegions());
-                ItsEnvironment.RegisterActiveTileAddition(index, -count);
-            }
-        }
-        else
-        {
-            for (int i = 0; i < Balances.size(); ++i)
-            {
-                ItsEnvironment.RegisterActiveTileAddition(i, Balances[i]);
-            }
-        }
     }
 
 
-    void Individual::Update(Mat& interactableEnvironment, Environment::ColocationMapType& colocations, std::vector<cv::Rect>& offLimitRegions)
+    void Individual::Update(Mat& interactableEnvironment, Environment::ColocationMapType& colocations)
     {
         // Integrate environmental input.
         auto interactionRegion = interactableEnvironment(Rect(X, Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize));
@@ -145,18 +89,15 @@ namespace ABME
         CurrentBarcode->Update(true, ItsGeneticCode.BehaviourGenes.HasLargePatterns);
 
         // Update world.
-
+        Vitality += ProcessWorld();
 
         // Calculate movement and consumption.
         Vec2i movement; int cellsActive = 0;
         CurrentBarcode->ComputeMetrics(movement, cellsActive);
 
-        // Leave or extract some tiles.
-        bool foundTiles = CurrentBarcode->UpdateWorld(ItsEnvironment.GetMap(), X, Y, GlobalSettings::WorldUpdateProbability);
-
         // Update live status.
         // An individual dies if it has no food or all or no cell is active.
-        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || !foundTiles || Age >= ItsGeneticCode.ProgrammedLifespan)
+        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || Vitality <= 0 || Vitality >= 1000000 || Age >= ItsGeneticCode.ProgrammedLifespan)
         {
             Kill();
             return;
@@ -173,7 +114,7 @@ namespace ABME
             for (auto i = greaterMovement; i > 0;)
             {
                 auto thisRect = cv::Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
-                if (!DetectCollision(thisRect, offLimitRegions)) break;
+                if (!DetectCollision(thisRect, ItsEnvironment.GetRegions())) break;
 
                 --i;
                 newX = X + GlobalSettings::DistanceStep * (int(i * (float(movement[0]) / greaterMovement) / GlobalSettings::DistanceStep));
@@ -194,5 +135,124 @@ namespace ABME
 
         // Update individual parameters.
         Age += 1;
+    }
+
+
+    int Individual::ProcessWorld()
+    {
+        int vitalityUpdate = 0;
+
+        // Convert world at this location to a string.
+        auto& wholeMap = ItsEnvironment.GetMap();
+        std::string worldString = Helpers::ConvertMatToString(wholeMap(Rect(X, Y, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize)));
+
+        // Find pattern matches in this region, and update the map with some small probability.
+        auto oldWorldString = worldString;
+
+        // Do the 1D genes first.
+        for (auto&[key, val] : ItsGeneticCode.InteractionGenes.Genes)
+        {
+            if (key >= 10) break;
+            std::string pattern = Helpers::GetParentPattern(key);
+            vitalityUpdate += UpdateWorld1D(pattern, val, oldWorldString, worldString);
+        }
+
+        // Do the 3x3 2D genes next.
+        vitalityUpdate += UpdateWorld2D(oldWorldString, 3, worldString);
+
+        // Do the 5x5 2D genes next...
+        if (ItsGeneticCode.InteractionGenes.HasLargePatterns) vitalityUpdate += UpdateWorld2D(oldWorldString, 5, worldString);
+
+        // Update the world using the new string.
+        for (int i = 0; i < worldString.size(); ++i)
+        {
+            wholeMap.at<uchar>(Y + i / GlobalSettings::BarcodeSize, X + i % GlobalSettings::BarcodeSize) = worldString[i] == '1' ? 255 : 0;
+        }
+
+        return vitalityUpdate;
+    }
+
+
+    int Individual::UpdateWorld1D(std::string& pattern, uchar& vitalityUpdate, std::string& oldWorldString, std::string& newWorldString)
+    {
+        std::uniform_real_distribution<> dist(0.0, 1.0);
+        int increment = vitalityUpdate == '1' ? 1 : -1;
+        int count = 0;
+
+#pragma omp parallel for
+        for (int j = 0; j < GlobalSettings::BarcodeSize; ++j)
+        {
+            std::string subString = oldWorldString.substr(j * GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+            std::vector<size_t> positions;
+            positions.reserve(GlobalSettings::BarcodeSize);
+
+            size_t pos = subString.find(pattern, 0);
+            while (pos != std::string::npos)
+            {
+                count += increment;
+                positions.push_back(pos);
+                pos = subString.find(pattern, pos + 1);
+            }
+
+            // Replace in the new pattern.
+            if (pattern.size() == 1)
+            {
+                for (auto& pos : positions)
+                {
+                    auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos];
+                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? '1' : tile;
+                }
+            }
+            else if (pattern.size() == 3)
+            {
+                for (auto& pos : positions)
+                {
+                    auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos + 1];
+                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? '1' : tile;
+                }
+            }
+        }
+
+        return count;
+    }
+
+
+    int Individual::UpdateWorld2D(std::string& oldWorldString, int patternWidth, std::string& newWorldString)
+    {
+        auto& map = patternWidth <= 3 ? ShortGenePatternMap : LongGenePatternMap;
+        std::uniform_real_distribution<> dist(0.0, 1.0);
+
+        const int edgeLimit = patternWidth - 1;
+        const int replaceOffset = (patternWidth - 1) / 2;
+        int count = 0;
+
+#pragma omp parallel for
+        for (int j = 0; j < GlobalSettings::BarcodeSize - edgeLimit; ++j)
+        {
+            for (int i = 0; i < GlobalSettings::BarcodeSize - edgeLimit; ++i)
+            {
+                // Get the pattern at this position of the barcode.
+                std::string subString;
+                for (auto k = j; k < j + patternWidth; ++k)
+                {
+                    subString += oldWorldString.substr(k * GlobalSettings::BarcodeSize + i, patternWidth);
+                }
+
+                // Find which gene this would require.
+                auto& geneIndex = map[subString];
+
+                // Do we have this gene?
+                if (ItsGeneticCode.InteractionGenes.Genes.count(geneIndex) == 0) continue;
+
+                // Otherwise increment the vitality update by the gene value.
+                count += ItsGeneticCode.InteractionGenes.Genes[geneIndex] == '1' ? 1 : -1;
+
+                // Replace at the right position.
+                auto& tile = newWorldString[GlobalSettings::BarcodeSize * (j + replaceOffset) + i + replaceOffset];
+                tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? '1' : tile;
+            }
+        }
+
+        return count;
     }
 }

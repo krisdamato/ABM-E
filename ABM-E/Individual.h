@@ -26,7 +26,7 @@ namespace ABME
         void DrawBarcode(std::string& windowName);
         const std::string& GetBarcodeString() const;
         void Kill();
-        void Update(cv::Mat& interactableEnvironment, Environment::ColocationMapType& colocations, std::vector<cv::Rect>& offLimitRegions);
+        void Update(cv::Mat& interactableEnvironment, Environment::ColocationMapType& colocations);
 
         inline bool IsAlive() const
         {
@@ -43,9 +43,16 @@ namespace ABME
         int X = -1;
         int Y = -1;
         int LastCellsActive = 0;
-        std::vector<int> Balances;
+        int Vitality = 50000;
+
+        static PatternMap ShortGenePatternMap;
+        static PatternMap LongGenePatternMap;
 
     protected:
+        int ProcessWorld();
+        int UpdateWorld1D(std::string& pattern, uchar& replacement, std::string& oldWorldString, std::string& update);
+        int UpdateWorld2D(std::string& oldBarcode, int patternWidth, std::string& newWorldString);
+
         bool Alive = true;
     };
 }

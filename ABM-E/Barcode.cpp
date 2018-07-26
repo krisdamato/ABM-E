@@ -4,13 +4,11 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
+#include "Individual.h"
 
 namespace ABME
 {
     using namespace cv;
-
-    PatternMap Barcode::ShortGenePatternMap = Helpers::GenerateShortPatternMap();
-    PatternMap Barcode::LongGenePatternMap = Helpers::GenerateLongPatternMap();
 
 
     Barcode::Barcode(GeneSet& behaviourGenes, int width, int height) : behaviourGenes(behaviourGenes), width(width), height(height)
@@ -388,7 +386,7 @@ namespace ABME
 
     void Barcode::Update2DWithPatternMap(std::string& oldBarcode, int patternWidth)
     {
-        auto& map = patternWidth <= 3 ? ShortGenePatternMap : LongGenePatternMap;
+        auto& map = patternWidth <= 3 ? Individual::ShortGenePatternMap : Individual::LongGenePatternMap;
 
         const int edgeLimit = patternWidth - 1;
         const int replaceOffset = (patternWidth - 1) / 2;

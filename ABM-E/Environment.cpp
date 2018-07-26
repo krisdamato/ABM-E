@@ -119,20 +119,12 @@ namespace ABME
     /// Returns the number of active tiles in the map.
     /// If includeBoundBalance is true, it also adds the number of "tiles" 
     /// bound to the population.
-    int Environment::CountActiveTiles(bool includeBoundBalance) const
+    int Environment::CountActiveTiles() const
     {
         int count = 0;
         for (auto i = 0; i < Regions.size(); ++i)
         {
             count += CountActiveTiles(i);
-        }
-
-        if (includeBoundBalance)
-        {
-            for (auto& ind : Individuals)
-            {
-                for (auto b : ind->Balances) count += b;
-            }
         }
 
         return count;
@@ -491,7 +483,7 @@ namespace ABME
         for (int i = 0; i < Individuals.size(); ++i)
         {
             auto& individual = Individuals[i];
-            individual->Update(Snapshot, Colocations, Regions);
+            individual->Update(Snapshot, Colocations);
             
             // Add random ("Brownian") motion.
             int newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);

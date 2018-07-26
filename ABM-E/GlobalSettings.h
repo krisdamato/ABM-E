@@ -13,10 +13,10 @@ namespace ABME
         static std::set<int> ShuffleIndices(int numIndices, bool useSimplerGenesFirst);
 
         static std::mt19937 RNG;
-        static const int NumGenes = 33554432 + 522; // Includes 5x5 genes...
-        //static const int NumGenes = 522;
+        //static const int NumGenes = 33554432 + 522; // Includes 5x5 genes...
+        static const int NumGenes = 522;
         static const int FixedSeed = 0;
-        static const bool Randomise = false;
+        static const bool Randomise = true;
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;
         static const int CrisisPopulationSize = 500;

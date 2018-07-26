@@ -142,7 +142,7 @@ namespace ABME
         }
 
 
-        inline std::string ConvertMatToString(cv::Mat& region)
+        inline std::string ConvertMatToString(const cv::Mat& region)
         {
             std::string representation(region.cols * region.rows, '0');
             for (int j = 0; j < region.rows; j++)

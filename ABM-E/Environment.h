@@ -33,7 +33,7 @@ namespace ABME
         void CapturePopulation();
         int CauseTileCrisis(int numTilesToAdd);
         void ClampPositions(int& x, int& y) const;
-        int CountActiveTiles(bool includeBoundBalance) const;
+        int CountActiveTiles() const;
         int CountActiveTiles(int regionIndex) const;
         void Draw(std::string& windowName) const;
         cv::Mat& GetMap();
