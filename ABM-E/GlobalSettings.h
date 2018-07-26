@@ -20,6 +20,8 @@ namespace ABME
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;
         static const int CrisisPopulationSize = 500;
+        static const int BehaviourGenePossibilities = 2;
+        static const int InteractionGenePossibilities = 4;
         static const double WorldUpdateProbability;
         static bool ForceEqualChromosomeReproductions;
         static int DistanceStep;

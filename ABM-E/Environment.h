@@ -54,7 +54,6 @@ namespace ABME
         void GenerateRandomTiles(cv::Rect& region, int numTiles);
         void GenerateRandomTiles(int numTiles);
         void BurnBarcode(cv::Mat& map, Individual& individual);
-        void ReplenishTiles();
 
         ColocationMapType Colocations;
         cv::Mat Map;

@@ -52,6 +52,7 @@ namespace ABME
         int ProcessWorld();
         int UpdateWorld1D(std::string& pattern, uchar& replacement, std::string& oldWorldString, std::string& update);
         int UpdateWorld2D(std::string& oldBarcode, int patternWidth, std::string& newWorldString);
+        static void InterpretInteractionGeneValue(uchar& val, int& vitalityUpdate, uchar& replacement);
 
         bool Alive = true;
     };

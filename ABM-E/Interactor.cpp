@@ -136,7 +136,7 @@ namespace ABME
     template <typename TChr>
     Chromosome<TChr> Interactor::RecombineChromosomes(Chromosome<TChr>& first, Chromosome<TChr>& second, std::uniform_real_distribution<> dist, double metaMutationRate)
     {
-        Chromosome<TChr> newChromosome;
+        Chromosome<TChr> newChromosome(first.MaxGeneValue + 1);
 
         if (GlobalSettings::MutationRatesEvolve)
         {
@@ -166,6 +166,7 @@ namespace ABME
         std::uniform_int_distribution<std::mt19937::result_type> distIndex(0, first.Genes.size() + second.Genes.size() - 1);
         std::uniform_int_distribution<std::mt19937::result_type> distGeneIndex(0, GlobalSettings::NumGenes - 1);
         std::uniform_int_distribution<std::mt19937::result_type> distDeleteIndex(0, newLength - 1);
+        std::uniform_int_distribution<std::mt19937::result_type> distGeneValue(0, newChromosome.MaxGeneValue);
 
         auto& newGenes = newChromosome.Genes;
 
@@ -195,7 +196,7 @@ namespace ABME
                 done = newGenes.count(geneIndex) == 0;
             }
 
-            uchar geneValue = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
+            uchar geneValue = distGeneValue(GlobalSettings::RNG);
             newGenes[geneIndex] = geneValue;
             if (geneIndex >= 522) newChromosome.HasLargePatterns = true;
         }
@@ -221,7 +222,7 @@ namespace ABME
                         done = newGenes.count(geneIndex) == 0;
                     }
                     if (geneIndex >= 522) newChromosome.HasLargePatterns = true;
-                    transGenes[geneIndex] = dist(GlobalSettings::RNG) < 0.5 ? '1' : '0';
+                    transGenes[geneIndex] = distGeneValue(GlobalSettings::RNG);
                 }
                 else
                 {
@@ -249,10 +250,14 @@ namespace ABME
         for (auto&[key, value] : newGenes)
         {
             bool flip = dist(GlobalSettings::RNG) < newChromosome.GetFlipMutationRate();
-            if (flip)
+            if (flip ) 
             {
-                if (value == '1') value = '0';
-                if (value == '0') value = '1';
+                if (newChromosome.MaxGeneValue == 1) value = 1 - value; // Simply flip
+                else
+                {
+                    // Otherwise simple choose from the set of possibilities.
+                    value = distGeneValue(GlobalSettings::RNG);
+                }
             }
         }
 

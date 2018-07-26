@@ -166,18 +166,21 @@ namespace ABME
         // Update the world using the new string.
         for (int i = 0; i < worldString.size(); ++i)
         {
-            wholeMap.at<uchar>(Y + i / GlobalSettings::BarcodeSize, X + i % GlobalSettings::BarcodeSize) = worldString[i] == '1' ? 255 : 0;
+            wholeMap.at<uchar>(Y + i / GlobalSettings::BarcodeSize, X + i % GlobalSettings::BarcodeSize) = worldString[i] == 1 ? 255 : 0;
         }
 
         return vitalityUpdate;
     }
 
 
-    int Individual::UpdateWorld1D(std::string& pattern, uchar& vitalityUpdate, std::string& oldWorldString, std::string& newWorldString)
+    int Individual::UpdateWorld1D(std::string& pattern, uchar& geneValue, std::string& oldWorldString, std::string& newWorldString)
     {
-        std::uniform_real_distribution<> dist(0.0, 1.0);
-        int increment = vitalityUpdate == '1' ? 1 : -1;
+        int increment;
+        uchar replacement;
+        InterpretInteractionGeneValue(geneValue, increment, replacement);
+        
         int count = 0;
+        std::uniform_real_distribution<> dist(0.0, 1.0);
 
 #pragma omp parallel for
         for (int j = 0; j < GlobalSettings::BarcodeSize; ++j)
@@ -200,7 +203,7 @@ namespace ABME
                 for (auto& pos : positions)
                 {
                     auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos];
-                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? '1' : tile;
+                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
                 }
             }
             else if (pattern.size() == 3)
@@ -208,7 +211,7 @@ namespace ABME
                 for (auto& pos : positions)
                 {
                     auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos + 1];
-                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? '1' : tile;
+                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
                 }
             }
         }
@@ -244,15 +247,25 @@ namespace ABME
                 // Do we have this gene?
                 if (ItsGeneticCode.InteractionGenes.Genes.count(geneIndex) == 0) continue;
 
-                // Otherwise increment the vitality update by the gene value.
-                count += ItsGeneticCode.InteractionGenes.Genes[geneIndex] == '1' ? 1 : -1;
+                // Otherwise get the gene and increment the vitality update by the gene value.
+                int increment;
+                uchar replacement;
+                InterpretInteractionGeneValue(ItsGeneticCode.InteractionGenes.Genes[geneIndex], increment, replacement);
+                count += increment;
 
                 // Replace at the right position.
                 auto& tile = newWorldString[GlobalSettings::BarcodeSize * (j + replaceOffset) + i + replaceOffset];
-                tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? '1' : tile;
+                tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
             }
         }
 
         return count;
+    }
+
+
+    void Individual::InterpretInteractionGeneValue(uchar& val, int& vitalityUpdate, uchar& replacement)
+    {
+        vitalityUpdate = val / 2 == 0 ? -1 : 1;
+        replacement = val % 2;
     }
 }

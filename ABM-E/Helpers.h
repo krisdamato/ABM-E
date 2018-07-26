@@ -102,7 +102,7 @@ namespace ABME
             std::string pattern;
             for (auto i = patternLength - 1; i >= 0; --i)
             {
-                pattern.push_back((geneIndex & 1 << i) == 1 << i ? '1' : '0');
+                pattern.push_back((geneIndex & 1 << i) == 1 << i ? 1 : 0);
             }
 
             return pattern;
@@ -144,14 +144,14 @@ namespace ABME
 
         inline std::string ConvertMatToString(const cv::Mat& region)
         {
-            std::string representation(region.cols * region.rows, '0');
+            std::string representation(region.cols * region.rows, 0);
             for (int j = 0; j < region.rows; j++)
             {
                 for (int i = 0; i < region.cols; i++)
                 {
                     if (region.at<uchar>(j, i) > 0)
                     {
-                        representation[j * region.cols + i] = '1';
+                        representation[j * region.cols + i] = 1;
                     }
                 }
             }
@@ -176,15 +176,15 @@ namespace ABME
 
 
         /// Generates a random chromosome of the requested length.
-        inline GeneSet GenerateRandomChromosome(int length, bool simpleGenesFirst)
+        inline GeneSet GenerateRandomChromosome(int length, bool simpleGenesFirst, int valuePossibilities)
         {
-            std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
+            std::uniform_int_distribution<std::mt19937::result_type> dist(0, valuePossibilities - 1);
 
             GeneSet chromosome;
             auto geneIndices = GlobalSettings::ShuffleIndices(length, simpleGenesFirst);
             for (auto& i : geneIndices)
             {
-                chromosome[i] = dist1(GlobalSettings::RNG) == 1 ? '1' : '0';
+                chromosome[i] = dist(GlobalSettings::RNG);
             }
             
 
@@ -193,14 +193,14 @@ namespace ABME
 
 
         /// Copies the chromosome gene indices but changes the values.
-        inline GeneSet GenerateRandomChromosome(GeneSet& prototype)
+        inline GeneSet GenerateRandomChromosome(GeneSet& prototype, int valuePossibilities)
         {
-            std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
+            std::uniform_int_distribution<std::mt19937::result_type> dist(0, valuePossibilities - 1);
 
             GeneSet chromosome;
             for (auto&[index, value] : prototype)
             {
-                chromosome[index] = dist1(GlobalSettings::RNG) == 1 ? '1' : '0';
+                chromosome[index] = dist(GlobalSettings::RNG);
             }
 
             return chromosome;
@@ -267,7 +267,8 @@ namespace ABME
         }
 
 
-        /// Returns a set (ordered) of tuples with (gene index, gene counts, percentage that are on, i.e. '1')
+        /// Returns a set (ordered) of tuples with (gene index, gene counts, percentage that are on, i.e. 1)
+        /// TODO: Fix this for non binary genes.
         inline std::set<std::tuple<int, int, float>, GeneCountComparator> GeneStatistics(std::vector<GeneSet>& chromosomes)
         {
             std::set<std::tuple<int, int, float>, GeneCountComparator> genePool;
@@ -279,7 +280,7 @@ namespace ABME
             {
                 for (auto&[index, value] : chr)
                 {
-                    if (value == '1') ++onGenes[index];
+                    if (value == 1) ++onGenes[index];
                     else ++offGenes[index];
 
                     allGenes.insert(index);

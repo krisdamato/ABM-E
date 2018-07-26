@@ -30,15 +30,19 @@ namespace ABME
         std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - GlobalSettings::BarcodeSize);
 
         // Create individuals.
-        auto prototypeBehaviour = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
-        auto prototypeInteraction = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+        auto prototypeBehaviour = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
+        auto prototypeInteraction = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::InteractionGenePossibilities);
 
         for (auto i = 0; i < numIndividuals; ++i)
         {
             GeneticCode<ushort> geneticCode;
 
-            geneticCode.BehaviourGenes.Genes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototypeBehaviour) : Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
-            geneticCode.InteractionGenes.Genes = useSameGeneIndices ? Helpers::GenerateRandomChromosome(prototypeInteraction) : Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst);
+            geneticCode.BehaviourGenes.Genes = useSameGeneIndices ? 
+                Helpers::GenerateRandomChromosome(prototypeBehaviour, GlobalSettings::BehaviourGenePossibilities) : 
+                Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
+            geneticCode.InteractionGenes.Genes = useSameGeneIndices ? 
+                Helpers::GenerateRandomChromosome(prototypeInteraction, GlobalSettings::InteractionGenePossibilities) :
+                Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::InteractionGenePossibilities);
 
             Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
         }
@@ -352,53 +356,100 @@ namespace ABME
 
             std::stringstream log;
             log << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
+            std::map<int, int> genePoolBehaviour;
+            std::map<int, int> genePoolInteraction;
             std::map<int, int> genePool;
 
-            float averageAge = 0.f;
-            double averageMutationRateBitFlip = 0;
-            double averageMutationRateInsertion = 0;
-            double averageMutationRateDeletion = 0;
-            double averageMutationRateMeta = 0;
-            double averageMutationRateTrans = 0;
+            float age = 0.f, reproductiveAge = 0.f, programmedDeath = 0.f;
+            double mrfBehaviour = 0, mrfInteraction = 0;
+            double mriBehaviour = 0, mriInteraction = 0;
+            double mrdBehaviour = 0, mrdInteraction = 0;
+            double mrtBehaviour = 0, mrtInteraction = 0;
+            double mrm = 0;
+            double mrfParams = 0;
             for (auto& individual : Individuals)
             {
+                genePoolBehaviour[individual->ItsGeneticCode.BehaviourGenes.Length()]++;
+                genePoolInteraction[individual->ItsGeneticCode.InteractionGenes.Length()]++;
                 genePool[individual->ItsGeneticCode.Length()]++;
-                averageAge += individual->Age;
-                averageMutationRateBitFlip += individual->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate();
-                averageMutationRateInsertion += individual->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate();
-                averageMutationRateDeletion += individual->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate();
-                averageMutationRateTrans += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();
-                averageMutationRateMeta += individual->ItsGeneticCode.GetMetaMutationRate();
-            }
-            averageAge /= Individuals.size();
-            averageMutationRateBitFlip /= Individuals.size();
-            averageMutationRateInsertion /= Individuals.size();
-            averageMutationRateDeletion /= Individuals.size();
-            averageMutationRateTrans /= Individuals.size();
-            averageMutationRateMeta /= Individuals.size();
 
-            float averageLength = 0.f;
+                age += individual->Age;
+                reproductiveAge += individual->ItsGeneticCode.ReproductiveAge;
+                programmedDeath += individual->ItsGeneticCode.ProgrammedLifespan;
+                
+                mrfBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate();
+                mriBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate();
+                mrdBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate();
+                mrtBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();
+                
+                mrfInteraction += individual->ItsGeneticCode.InteractionGenes.GetFlipMutationRate();
+                mriInteraction += individual->ItsGeneticCode.InteractionGenes.GetInsertionMutationRate();
+                mrdInteraction += individual->ItsGeneticCode.InteractionGenes.GetDeletionMutationRate();
+                mrtInteraction += individual->ItsGeneticCode.InteractionGenes.GetTransMutationRate();
+                
+                mrm += individual->ItsGeneticCode.GetMetaMutationRate();
+                mrfParams += individual->ItsGeneticCode.GetFlipMutationRate();
+            }
+            age /= Individuals.size();
+            reproductiveAge /= Individuals.size();
+            programmedDeath /= Individuals.size();
+            mrfBehaviour /= Individuals.size();
+            mriBehaviour /= Individuals.size();
+            mrdBehaviour /= Individuals.size();
+            mrtBehaviour /= Individuals.size();
+            mrfInteraction /= Individuals.size();
+            mriInteraction /= Individuals.size();
+            mrdInteraction /= Individuals.size();
+            mrtInteraction /= Individuals.size();
+            mrm /= Individuals.size();
+            mrfParams /= Individuals.size();
+
+            float lengthOverall = 0.f, lengthBehaviour = 0.f, lengthInteraction = 0.f;
             for (auto&[length, count] : genePool)
             {
-                log << "Chromosome length " << length << ": " << count << " individuals.\n";
-                averageLength += length * count;
+                log << "Overall genetic code length " << length << ": " << count << " individuals.\n";
+                lengthOverall += length * count;
             }
-            if (Individuals.size() > 0) averageLength /= Individuals.size();
-            log << "\nAvg. chromosome length: " << averageLength << std::endl;
-            log << "\nAvg. age: " << averageAge << std::endl;
-            log << "\nAvg. mut. rate (flip): " << averageMutationRateBitFlip << std::endl;
-            log << "Avg. mut. rate (ins.): " << averageMutationRateInsertion << std::endl;
-            log << "Avg. mut. rate (del.): " << averageMutationRateDeletion << std::endl;
-            log << "Avg. mut. rate (trans.): " << averageMutationRateTrans << std::endl;
-            log << "Avg. mut. rate (meta): " << averageMutationRateMeta << std::endl;
+            
+            for (auto&[length, count] : genePoolBehaviour)
+            {
+                lengthBehaviour += length * count;
+            }
+            
+            for (auto&[length, count] : genePoolInteraction)
+            {
+                lengthInteraction += length * count;
+            }
 
-            // Report most popular chromosome.
-            std::vector<GeneSet> chromosomes;
-            for (auto& ind : Individuals) chromosomes.push_back(ind->ItsGeneticCode.BehaviourGenes.Genes);
+            lengthOverall /= Individuals.size();
+            lengthBehaviour /= Individuals.size();
+            lengthInteraction /= Individuals.size();
 
-            auto geneCountSet = Helpers::GeneStatistics(chromosomes);
+            log << "\n[Overall] Avg. chromosome length: " << lengthOverall << std::endl;
+            log << "[Behaviour] Avg. chromosome length: " << lengthBehaviour << std::endl;
+            log << "[Interaction] Avg. chromosome length: " << lengthInteraction << std::endl;
+            log << "\nAvg. age: " << age << std::endl;
+            log << "Avg. reproductive age: " << reproductiveAge << std::endl;
+            log << "Avg. lifespan: " << programmedDeath << std::endl;
+            log << "\n[Behaviour] Avg. mut. rate (flip): " << mrfBehaviour << std::endl;
+            log << "[Behaviour] Avg. mut. rate (ins.): " << mriBehaviour << std::endl;
+            log << "[Behaviour] Avg. mut. rate (del.): " << mrdBehaviour << std::endl;
+            log << "[Behaviour] Avg. mut. rate (trans.): " << mrtBehaviour << std::endl;
+            log << "\n[Interaction] Avg. mut. rate (flip): " << mrfInteraction << std::endl;
+            log << "[Interaction] Avg. mut. rate (ins.): " << mriInteraction << std::endl;
+            log << "[Interaction] Avg. mut. rate (del.): " << mrdInteraction << std::endl;
+            log << "[Interaction] Avg. mut. rate (trans.): " << mrtInteraction << std::endl;
+            log << "\n[Params] Avg. mut. rate (flip): " << mrfParams << std::endl;
+            log << "Avg. mut. rate (meta): " << mrm << std::endl;
 
-            log << "Most common genes:\n";
+            // Report most popular genes.
+            std::vector<GeneSet> chromosomesBehaviour, chromosomesInteraction;
+            for (auto& ind : Individuals) chromosomesBehaviour.push_back(ind->ItsGeneticCode.BehaviourGenes.Genes);
+            //for (auto& ind : Individuals) chromosomesInteraction.push_back(ind->ItsGeneticCode.BehaviourGenes.Genes);
+
+            auto geneCountSet = Helpers::GeneStatistics(chromosomesBehaviour);
+
+            log << "[Behaviour] Most common genes:\n";
             std::cout << std::setprecision(2);
             int j = 0;
             for (auto it = geneCountSet.begin(); it != geneCountSet.end() && j < 15; ++it, ++j)
@@ -571,8 +622,6 @@ namespace ABME
             }
         }
 
-        ReplenishTiles();
-
         // Log some interesting metrics.
         RunMetrics(killed, born, diedNaturally);
 
@@ -685,38 +734,11 @@ namespace ABME
         for (auto i = 0; i < barcode.size(); ++i)
         {
             uchar c = barcode[i];
-            if (c == '1')
+            if (c == 1)
             {
                 int x = individual.X + (i % GlobalSettings::BarcodeSize);
                 int y = individual.Y + (i / GlobalSettings::BarcodeSize);
                 map.at<uchar>(y, x) = 255;
-            }
-        }
-    }
-
-
-    void Environment::ReplenishTiles()
-    {
-        if (GlobalSettings::AllowFreeTileMovement)
-        {
-            auto count = 0;
-
-            // Sum all additions together.
-            for (auto& c : NumActiveTilesToAdd)
-            {
-                count += c;
-                c = 0;
-            }
-
-            GenerateRandomTiles(count);
-        }
-        else
-        {
-            // Generate missing food tiles from dead individuals.
-            for (auto i = 0; i < NumActiveTilesToAdd.size(); ++i)
-            {
-                GenerateRandomTiles(Regions[i], NumActiveTilesToAdd[i]);
-                NumActiveTilesToAdd[i] = 0;
             }
         }
     }

@@ -14,7 +14,7 @@ namespace ABME
     Barcode::Barcode(GeneSet& behaviourGenes, int width, int height) : behaviourGenes(behaviourGenes), width(width), height(height)
     {
         // Create a string to represent the barcode with the proper length.
-        barcode = std::string(width * height, '0');
+        barcode = std::string(width * height, 0);
     }
 
 
@@ -40,7 +40,7 @@ namespace ABME
             if (x == 0 || x == 15) continue;
 
             // Note: boundary cells are influenced by border effects.
-            if (barcode[i] != '0')
+            if (barcode[i] != 0)
             {
                 // Increment consumption.
                 cellsActive += 1;
@@ -76,7 +76,7 @@ namespace ABME
         auto count = 0;
         for (uchar c : barcode)
         {
-            if (c == '1') ++count;
+            if (c == 1) ++count;
         }
 
         return count;
@@ -93,7 +93,7 @@ namespace ABME
             for (auto j = 0; j < width; ++j)
             {
                 uchar c = barcode[i * width + j];
-                rectangle(image, Point(j * CellSize, i * CellSize), Point(j * CellSize + CellSize, i * CellSize + CellSize), (c == '1' ? 0 : 200), CV_FILLED);
+                rectangle(image, Point(j * CellSize, i * CellSize), Point(j * CellSize + CellSize, i * CellSize + CellSize), (c == 1 ? 0 : 200), CV_FILLED);
             }
         }
 
@@ -115,7 +115,7 @@ namespace ABME
             {
                 if (environment.at<uchar>(j, i) > 0) 
                 {
-                    barcode[j * width + i] = '1';
+                    barcode[j * width + i] = 1;
                 }
             }
         }
@@ -129,9 +129,9 @@ namespace ABME
         auto rhsBarcode = rhs.barcode;
         for (auto i = 0; i < rhsBarcode.size(); ++i)
         {
-            if (rhsBarcode[i] == '0')
+            if (rhsBarcode[i] == 0)
             {
-                barcode[i] = '0';
+                barcode[i] = 0;
             }
         }
     }
@@ -146,7 +146,7 @@ namespace ABME
         {
             auto& tile = environment.at<uchar>(y + i / GlobalSettings::BarcodeSize, x + i % GlobalSettings::BarcodeSize);
             auto& cell = barcode[i];
-            if (tile == 0 && (!useActiveCells || cell == '1')) relativeIndices.push_back(i);
+            if (tile == 0 && (!useActiveCells || cell == 1)) relativeIndices.push_back(i);
         }
 
         // Shuffle the indices.
@@ -214,9 +214,9 @@ namespace ABME
         auto rhsBarcode = rhs.barcode;
         for (auto i = 0; i < rhsBarcode.size(); ++i)
         {
-            if (rhsBarcode[i] == '1')
+            if (rhsBarcode[i] == 1)
             {
-                barcode[i] = '0';
+                barcode[i] = 0;
             }
         }
     }
@@ -270,13 +270,13 @@ namespace ABME
         {
             int tileX = x + i % width;
             int tileY = y + i / width;
-            if (barcode[i] == '1' && environment.at<uchar>(tileY, tileX) == 0 && dist(GlobalSettings::RNG) < probability)
+            if (barcode[i] == 1 && environment.at<uchar>(tileY, tileX) == 0 && dist(GlobalSettings::RNG) < probability)
             {
                 pointsToAdd.push_back(Point(tileX, tileY));
                 ++count;
             }
 
-            if (barcode[i] == '0' && environment.at<uchar>(tileY, tileX) == 255) removablePoints.push_back(i);
+            if (barcode[i] == 0 && environment.at<uchar>(tileY, tileX) == 255) removablePoints.push_back(i);
         }
         
         // We have failed to update if there are fewer tiles to remove.

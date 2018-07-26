@@ -9,6 +9,12 @@ namespace ABME
     class Chromosome
     {
     public:
+        Chromosome(int geneValuePossibilities) : MaxGeneValue(geneValuePossibilities - 1)
+        {
+
+        }
+
+
         inline double GetFlipMutationRate() const
         {
             return double(FlipMutationRate) / TMax;
@@ -82,9 +88,15 @@ namespace ABME
         }
 
 
-        GeneSet Genes;
+        inline size_t Length() const
+        {
+            return Genes.size();
+        }
 
+
+        GeneSet Genes;
         bool HasLargePatterns = false;
+        uchar MaxGeneValue;
 
         static const int TMax = std::numeric_limits<TParam>::max();
 

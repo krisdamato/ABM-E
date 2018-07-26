@@ -39,9 +39,9 @@ int main(int argc, char** argv)
     //environment.AddRegion(cv::Rect(72, 0, 56, 128), 0.08f);
     //environment.AddRegion(cv::Rect(56, 56, 16, 16), 0.08f);
 
-    Environment environment(128, 128);
+    Environment environment(128, 64);
     //environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
-    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.08f);
+    environment.AddRegion(cv::Rect(0, 0, 128, 64), 0.08f);
 
     environment.Initialise({ {4, 500}, {5, 500} }, false, true);
 
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
             intruderGeneticLength--;
             std::cout << "Genetic length of intruder population set to " << intruderGeneticLength << std::endl;
             break;
-        case '0':
+        case '#':
             environment.AddPopulation(GlobalSettings::CrisisPopulationSize, intruderGeneticLength, false, true);
             std::cout << "Added a new population of size " << GlobalSettings::CrisisPopulationSize << " and genetic length " << intruderGeneticLength << std::endl;
             break;
