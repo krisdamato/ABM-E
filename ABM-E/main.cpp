@@ -34,19 +34,21 @@ int main(int argc, char** argv)
     //environment.AddRegion(cv::Rect(320, 0, 192, 128), 0.04f);
     //environment.AddRegion(cv::Rect(192, 56, 128, 16), 0.01f);
     
+    //Environment environment(256, 128);
+    //environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.05f);
+    //environment.AddRegion(cv::Rect(136, 0, 120, 128), 0.01f);
+    //environment.AddRegion(cv::Rect(120, 56, 16, 16), 0.00f);
+
+    Environment environment(128, 128);
+    environment.AddRegion(cv::Rect(0, 0, 56, 128), 0.05f);
+    environment.AddRegion(cv::Rect(72, 0, 56, 128), 0.03f);
+    environment.AddRegion(cv::Rect(56, 56, 16, 16), 0.00f);
+
     //Environment environment(128, 128);
-    //environment.AddRegion(cv::Rect(0, 0, 56, 128), 0.08f);
-    //environment.AddRegion(cv::Rect(72, 0, 56, 128), 0.08f);
-    //environment.AddRegion(cv::Rect(56, 56, 16, 16), 0.08f);
+    ////environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
+    //environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.01f);
 
-    Environment environment(128, 64);
-    //environment.AddRegion(cv::Rect(0, 0, 120, 128), 0.08f);
-    environment.AddRegion(cv::Rect(0, 0, 128, 64), 0.08f);
-
-    environment.Initialise({ {4, 500}, {5, 500} }, false, true);
-
-    // Get first individual.
-    auto& individual = environment[0];
+    environment.Initialise({ { 4, 2000 }, { 5, 2000 } }, false, true);
 
     std::cout << "Starting [" << numThreads << " threads]\n";
     
@@ -74,7 +76,7 @@ int main(int argc, char** argv)
             drawEnvironment = !drawEnvironment;
             break;
         case 'f':
-            std::cout << "Num. active tiles: " << environment.CountActiveTiles(true) << std::endl;
+            std::cout << "Num. active tiles: " << environment.CountActiveTiles() << std::endl;
             break;
         case 'q': 
             running = false;

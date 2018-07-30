@@ -1,6 +1,7 @@
 #include "Individual.h"
 
 #include <opencv2/highgui.hpp>
+#include <omp.h>
 #include "Barcode.h"
 #include "GlobalSettings.h"
 
@@ -89,7 +90,7 @@ namespace ABME
         CurrentBarcode->Update(true, ItsGeneticCode.BehaviourGenes.HasLargePatterns);
 
         // Update world.
-        Vitality += ProcessWorld();
+        Vitality += (ProcessWorld() > 0 ? 1 : -1);
 
         // Calculate movement and consumption.
         Vec2i movement; int cellsActive = 0;
@@ -97,7 +98,7 @@ namespace ABME
 
         // Update live status.
         // An individual dies if it has no food or all or no cell is active.
-        if (cellsActive == std::pow(GlobalSettings::BarcodeSize - 2, 2) || cellsActive == 0 || Vitality <= 0 || Vitality >= 1000000 || Age >= ItsGeneticCode.ProgrammedLifespan)
+        if (Vitality <= 0 || Vitality >= GlobalSettings::MaxVitality || Age >= ItsGeneticCode.ProgrammedLifespan)
         {
             Kill();
             return;
@@ -182,36 +183,48 @@ namespace ABME
         int count = 0;
         std::uniform_real_distribution<> dist(0.0, 1.0);
 
-#pragma omp parallel for
-        for (int j = 0; j < GlobalSettings::BarcodeSize; ++j)
+#pragma omp parallel
         {
-            std::string subString = oldWorldString.substr(j * GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
-            std::vector<size_t> positions;
-            positions.reserve(GlobalSettings::BarcodeSize);
-
-            size_t pos = subString.find(pattern, 0);
-            while (pos != std::string::npos)
+            static thread_local int threadID = omp_get_thread_num();
+            static thread_local std::mt19937 localRNG;
+            static thread_local bool initialised = false;
+            if (!initialised)
             {
-                count += increment;
-                positions.push_back(pos);
-                pos = subString.find(pattern, pos + 1);
+                localRNG.seed(GlobalSettings::Seed + threadID);
+                initialised = true;
             }
 
-            // Replace in the new pattern.
-            if (pattern.size() == 1)
+#pragma omp for reduction(+:count)
+            for (int j = 0; j < GlobalSettings::BarcodeSize; ++j)
             {
-                for (auto& pos : positions)
+                std::string subString = oldWorldString.substr(j * GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+                std::vector<size_t> positions;
+                positions.reserve(GlobalSettings::BarcodeSize);
+
+                size_t pos = subString.find(pattern, 0);
+                while (pos != std::string::npos)
                 {
-                    auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos];
-                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
+                    count += increment;
+                    positions.push_back(pos);
+                    pos = subString.find(pattern, pos + 1);
                 }
-            }
-            else if (pattern.size() == 3)
-            {
-                for (auto& pos : positions)
+
+                // Replace in the new pattern.
+                if (pattern.size() == 1)
                 {
-                    auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos + 1];
-                    tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
+                    for (auto& pos : positions)
+                    {
+                        auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos];
+                        tile = (dist(localRNG) < GlobalSettings::WorldUpdateProbability) ? replacement : tile;
+                    }
+                }
+                else if (pattern.size() == 3)
+                {
+                    for (auto& pos : positions)
+                    {
+                        auto& tile = newWorldString[GlobalSettings::BarcodeSize * j + pos + 1];
+                        tile = dist(localRNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
+                    }
                 }
             }
         }
@@ -222,6 +235,10 @@ namespace ABME
 
     int Individual::UpdateWorld2D(std::string& oldWorldString, int patternWidth, std::string& newWorldString)
     {
+        static auto randomDevice = std::random_device();
+        static thread_local std::mt19937 localRNG;
+        localRNG.seed(GlobalSettings::Randomise ? randomDevice() : GlobalSettings::Seed);
+
         auto& map = patternWidth <= 3 ? ShortGenePatternMap : LongGenePatternMap;
         std::uniform_real_distribution<> dist(0.0, 1.0);
 
@@ -229,33 +246,45 @@ namespace ABME
         const int replaceOffset = (patternWidth - 1) / 2;
         int count = 0;
 
-#pragma omp parallel for
-        for (int j = 0; j < GlobalSettings::BarcodeSize - edgeLimit; ++j)
+#pragma omp parallel
         {
-            for (int i = 0; i < GlobalSettings::BarcodeSize - edgeLimit; ++i)
+            static thread_local int threadID = omp_get_thread_num();
+            static thread_local std::mt19937 localRNG;
+            static thread_local bool initialised = false;
+            if (!initialised)
             {
-                // Get the pattern at this position of the barcode.
-                std::string subString;
-                for (auto k = j; k < j + patternWidth; ++k)
+                localRNG.seed(GlobalSettings::Seed + threadID);
+                initialised = true;
+            }
+
+#pragma omp for reduction(+:count)
+            for (int j = 0; j < GlobalSettings::BarcodeSize - edgeLimit; ++j)
+            {
+                for (int i = 0; i < GlobalSettings::BarcodeSize - edgeLimit; ++i)
                 {
-                    subString += oldWorldString.substr(k * GlobalSettings::BarcodeSize + i, patternWidth);
+                    // Get the pattern at this position of the barcode.
+                    std::string subString;
+                    for (auto k = j; k < j + patternWidth; ++k)
+                    {
+                        subString += oldWorldString.substr(k * GlobalSettings::BarcodeSize + i, patternWidth);
+                    }
+
+                    // Find which gene this would require.
+                    auto& geneIndex = map[subString];
+
+                    // Do we have this gene?
+                    if (ItsGeneticCode.InteractionGenes.Genes.count(geneIndex) == 0) continue;
+
+                    // Otherwise get the gene and increment the vitality update by the gene value.
+                    int increment;
+                    uchar replacement;
+                    InterpretInteractionGeneValue(ItsGeneticCode.InteractionGenes.Genes[geneIndex], increment, replacement);
+                    count += increment;
+
+                    // Replace at the right position.
+                    auto& tile = newWorldString[GlobalSettings::BarcodeSize * (j + replaceOffset) + i + replaceOffset];
+                    tile = dist(localRNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
                 }
-
-                // Find which gene this would require.
-                auto& geneIndex = map[subString];
-
-                // Do we have this gene?
-                if (ItsGeneticCode.InteractionGenes.Genes.count(geneIndex) == 0) continue;
-
-                // Otherwise get the gene and increment the vitality update by the gene value.
-                int increment;
-                uchar replacement;
-                InterpretInteractionGeneValue(ItsGeneticCode.InteractionGenes.Genes[geneIndex], increment, replacement);
-                count += increment;
-
-                // Replace at the right position.
-                auto& tile = newWorldString[GlobalSettings::BarcodeSize * (j + replaceOffset) + i + replaceOffset];
-                tile = dist(GlobalSettings::RNG) < GlobalSettings::WorldUpdateProbability ? replacement : tile;
             }
         }
 

@@ -10,6 +10,7 @@ namespace ABME
     int GlobalSettings::NumThreads = 1;
     bool GlobalSettings::ForceEqualChromosomeReproductions = false;
     int GlobalSettings::DistanceStep = 1;
+    int GlobalSettings::Seed = 1;
     bool GlobalSettings::AllowFreeTileMovement = false;
     bool GlobalSettings::TileDepositsEqualDifference = false;
     bool GlobalSettings::UseSingleStructuralMutationRate = false;
@@ -21,7 +22,8 @@ namespace ABME
     void GlobalSettings::Initialise(int numThreads)
     {
         auto randomDevice = std::random_device();
-        RNG.seed(Randomise ? randomDevice() : FixedSeed);
+        if (Randomise) Seed = randomDevice();
+        RNG.seed(Seed);
 
         // Set number of OpenMP threads.
         NumThreads = numThreads;

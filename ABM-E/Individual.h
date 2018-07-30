@@ -43,7 +43,7 @@ namespace ABME
         int X = -1;
         int Y = -1;
         int LastCellsActive = 0;
-        int Vitality = 50000;
+        int Vitality = GlobalSettings::MaxVitality / 2;
 
         static PatternMap ShortGenePatternMap;
         static PatternMap LongGenePatternMap;

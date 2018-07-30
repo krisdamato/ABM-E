@@ -73,9 +73,18 @@ namespace ABME
         // Otherwise nothing happens.
         if (first.IsAlive() && second.IsAlive())
         {
-            cv::Mat& environment = first.ItsEnvironment.GetMap();
-            
-            return Reproduce(first, second);
+            const auto& offspring = Reproduce(first, second);
+            if (offspring != nullptr)
+            {
+                offspring->Vitality = std::min(first.Vitality, GlobalSettings::MaxVitality / 4) + std::min(second.Vitality, GlobalSettings::MaxVitality / 4);
+                first.Vitality -= std::min(first.Vitality, GlobalSettings::MaxVitality / 4);
+                second.Vitality -= std::min(second.Vitality, GlobalSettings::MaxVitality / 4);
+
+                if (first.Vitality <= 0) first.Kill();
+                if (second.Vitality <= 0) second.Kill();
+            }
+
+            return offspring;
         }
 
         return nullptr;

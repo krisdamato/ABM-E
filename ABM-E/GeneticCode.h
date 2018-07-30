@@ -53,13 +53,13 @@ namespace ABME
         Chromosome<TParam> BehaviourGenes = Chromosome<TParam>(GlobalSettings::BehaviourGenePossibilities); // Behaviour genes can have values in {0, 1}
         Chromosome<TParam> InteractionGenes = Chromosome<TParam>(GlobalSettings::InteractionGenePossibilities); // Interaction genes can have values in {0, ..., 3}
 
-        TParam ProgrammedLifespan = 100;
-        TParam ReproductiveAge = 5;
+        TParam ProgrammedLifespan = 200;
+        TParam ReproductiveAge = 0;
 
         static const int TMax = std::numeric_limits<TParam>::max();
 
     protected:
         TParam FlipMutationRate = TParam(0.01 * TMax); // on T_MAX.
-        TParam MetaMutationRate = TParam(0.005 * TMax); // on T_MAX.
+        TParam MetaMutationRate = TParam(0.001 * TMax); // on T_MAX.
     };
 }
