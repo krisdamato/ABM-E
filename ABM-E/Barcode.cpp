@@ -93,7 +93,7 @@ namespace ABME
             for (auto j = 0; j < width; ++j)
             {
                 uchar c = barcode[i * width + j];
-                rectangle(image, Point(j * CellSize, i * CellSize), Point(j * CellSize + CellSize, i * CellSize + CellSize), (c == 1 ? 0 : 200), CV_FILLED);
+                rectangle(image, Point(j * CellSize, i * CellSize), Point(j * CellSize + CellSize, i * CellSize + CellSize), (c == 1 ? 0 : 200), cv::FILLED);
             }
         }
 
