@@ -14,7 +14,7 @@ namespace ABME
 
         static std::mt19937 RNG;
         //static const int NumGenes = 33554432 + 522; // Includes 5x5 genes...
-        static const int NumGenes = 522;
+        static const int NumGenes = 522; // Up to 3x3 genes
         static const bool Randomise = true;
         static const int NumInteractionUpdates = 10;
         static const int BarcodeSize = 16;
@@ -31,6 +31,7 @@ namespace ABME
         static bool MutationRatesEvolve;
         static bool UseSingleStructuralMutationRate;
         static double BaseMetaMutationRate;
+		static const int MaxPopulationSize = 300;
 
     protected:
         static int NumThreads;

@@ -82,6 +82,7 @@ def process_logfile(filename):
                 mrf_p.append(float(line.replace(search_string_mrf_p, "")))
 
     fig, ax = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=False)
+    fig.set_size_inches(30, 20)
     
     ax[0,0].plot(lengths, label='Overall')
     ax[0,0].plot(lengths_b, label='Behaviour')
@@ -133,7 +134,7 @@ def process_logfile(filename):
     ax[1,0].legend(loc="upper center", shadow=False, prop={'size': 6})
     ax[1,1].legend(loc="upper center", shadow=False, prop={'size': 6})
     ax[2,1].legend(loc="upper center", shadow=False, prop={'size': 6})
-
+    
     plt.tight_layout()
     fig.savefig("{}_plots.png".format(filename))
     plt.close()

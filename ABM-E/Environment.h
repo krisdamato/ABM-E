@@ -35,6 +35,7 @@ namespace ABME
         void ClampPositions(int& x, int& y) const;
         int CountActiveTiles() const;
         int CountActiveTiles(int regionIndex) const;
+		int CountPopulation() const;
         void Draw(std::string& windowName) const;
         cv::Mat& GetMap();
         std::vector<cv::Rect>& GetRegions();

@@ -8,12 +8,12 @@ namespace ABME
 {
     /// This interacts each subsequent pair, in a non-overlapping way.
     /// Thus, if there are an odd number, one is uninteracted with.
-    std::vector<Individual*> Interactor::Interact(std::vector<Individual*> colocations)
+    std::vector<Individual*> Interactor::Interact(Environment& environment, std::vector<Individual*> colocations)
     {
         std::vector<Individual*> newIndividuals;
         for (auto i = 0; i < colocations.size() - 1; i += 2)
         {
-            auto newIndividual = Interact(*colocations[i], *colocations[i + 1]);
+            auto newIndividual = Interact(environment, *colocations[i], *colocations[i + 1]);
             if (newIndividual != nullptr)
             {
                 newIndividuals.push_back(newIndividual);
@@ -26,7 +26,7 @@ namespace ABME
 
     /// This decides the outcome of an interaction:
     /// Either both die, or one dies, or both live and produce an offspring.
-    Individual* Interactor::Interact(Individual& first, Individual& second)
+    Individual* Interactor::Interact(Environment& environment, Individual& first, Individual& second)
     {
         // Clone barcodes.
         auto firstClone = *first.CurrentBarcode;
@@ -67,7 +67,7 @@ namespace ABME
         if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsGeneticCode.Length() != second.ItsGeneticCode.Length()) return nullptr;
 
         // If any of the two are not yet of reproductive age, do nothing.
-        if (first.Age < first.ItsGeneticCode.ReproductiveAge || second.Age < second.ItsGeneticCode.ReproductiveAge) return nullptr;
+        if (environment.CountPopulation() >= GlobalSettings::MaxPopulationSize || first.Age < first.ItsGeneticCode.ReproductiveAge || second.Age < second.ItsGeneticCode.ReproductiveAge) return nullptr;
 
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.

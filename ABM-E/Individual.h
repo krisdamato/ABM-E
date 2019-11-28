@@ -20,7 +20,6 @@ namespace ABME
         Individual(Environment& environment, GeneticCode<ushort> chromosome);
         ~Individual();
 
-        bool AddDropTile(int numToTake);
         bool BeBorn();
         Individual* Clone(bool ignoreBalance) const;
         void DrawBarcode(std::string& windowName);

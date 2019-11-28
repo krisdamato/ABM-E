@@ -153,6 +153,12 @@ namespace ABME
     }
 
 
+	int Environment::CountPopulation() const
+	{
+		return Individuals.size();
+	}
+
+
     void Environment::Draw(std::string& windowName) const
     {
         // Convert from gayscale to color.
@@ -348,7 +354,7 @@ namespace ABME
     {
         static int i = 0;
         
-        if (i % 100 == 0)
+        if (i % 100 == 0 && Individuals.size() > 0)
         {
             auto& logger = Logger::Instance();
 
@@ -581,7 +587,7 @@ namespace ABME
                 }
 
                 // Interact 'em!
-                auto newIndividuals = Interactor::Interact(colocated);
+                auto newIndividuals = Interactor::Interact(*this, colocated);
                 if (newIndividuals.size() > 0)
                 {
                     // Add the individuals to our list.
