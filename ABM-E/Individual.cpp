@@ -103,23 +103,27 @@ namespace ABME
         CurrentBarcode->ComputeMetrics(movement);
 
         // Compute movement and collisions.
-        int newX = X + GlobalSettings::DistanceStep * (movement[0] / GlobalSettings::DistanceStep);
-        int newY = Y + GlobalSettings::DistanceStep * (movement[1] / GlobalSettings::DistanceStep);
+        int newX = X + GlobalSettings::DistanceStep * movement[0];
+        int newY = Y + GlobalSettings::DistanceStep * movement[1];
 		ItsEnvironment.ClampPositions(newX, newY);
 
         const auto greaterMovement = std::max(std::abs(movement[0]), std::abs(movement[1]));
         if (greaterMovement > 0)
         {
-            for (auto i = greaterMovement; i > 0;)
-            {
-                auto thisRect = cv::Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
-                if (!DetectCollision(thisRect, ItsEnvironment.GetRegions())) break;
+			auto i = 1;
+			for (; i <= greaterMovement; ++i)
+			{
+				newX = X + GlobalSettings::DistanceStep * (int(i * (float(movement[0]) / greaterMovement)));
+				newY = Y + GlobalSettings::DistanceStep * (int(i * (float(movement[1]) / greaterMovement)));
 
-                --i;
-                newX = X + GlobalSettings::DistanceStep * (int(i * (float(movement[0]) / greaterMovement) / GlobalSettings::DistanceStep));
-                newY = Y + GlobalSettings::DistanceStep * (int(i * (float(movement[1]) / greaterMovement) / GlobalSettings::DistanceStep));
-                ItsEnvironment.ClampPositions(newX, newY);
-            }
+				auto thisRect = cv::Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize);
+				if (DetectCollision(thisRect, ItsEnvironment.GetRegions())) break;
+			}
+
+			--i;
+            newX = X + GlobalSettings::DistanceStep * (int(i * (float(movement[0]) / greaterMovement)));
+            newY = Y + GlobalSettings::DistanceStep * (int(i * (float(movement[1]) / greaterMovement)));
+            ItsEnvironment.ClampPositions(newX, newY);
         }
         
         // Perform movement.

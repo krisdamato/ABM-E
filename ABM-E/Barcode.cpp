@@ -47,16 +47,16 @@ namespace ABME
                 switch (k % 4)
                 {
                 case 0:
-                    positiveX += 1.0f;
+                    positiveX += 0.5f;
                     break;
                 case 1:
-                    positiveY += 1.0f;
+                    positiveY += 0.5f;
                     break;
                 case 2:
-                    positiveX -= 1.0f;
+                    positiveX -= 0.5f;
                     break;
                 case 3:
-                    positiveY -= 1.0f;
+                    positiveY -= 0.5f;
                     break;
                 }
             }

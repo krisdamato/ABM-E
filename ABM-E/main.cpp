@@ -27,13 +27,17 @@ int main(int argc, char** argv)
     auto& logger = Logger::Instance();
 
     // Create an environment and individuals.
-    Environment environment(128, 128);
-    //environment.AddRegion(cv::Rect(0, 0, 56, 128), 0.02f);
-    //environment.AddRegion(cv::Rect(72, 0, 56, 128), 0.05f);
-    //environment.AddRegion(cv::Rect(56, 56, 16, 16), 0.00f);
-	environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.02f);
+    Environment environment(288, 288);
+    environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.02f);
+    environment.AddRegion(cv::Rect(0, 160, 128, 128), 0.05f);
+    environment.AddRegion(cv::Rect(160, 0, 128, 128), 0.03f);
+	environment.AddRegion(cv::Rect(160, 160, 128, 128), 0.08f);
+	environment.AddRegion(cv::Rect(128, 56, 32, 16), 0.01f);
+	environment.AddRegion(cv::Rect(56, 128, 16, 32), 0.01f);
+	environment.AddRegion(cv::Rect(128, 216, 32, 16), 0.01f);
+	environment.AddRegion(cv::Rect(216, 128, 16, 32), 0.01f);
 
-    environment.Initialise({ { 4, 150 }, { 5, 150} }, false, true);
+    environment.Initialise({ { 4, 300 }, { 5, 300} }, false, true);
 
     std::cout << "Starting [" << numThreads << " threads]\n";
     

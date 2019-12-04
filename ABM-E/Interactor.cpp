@@ -11,6 +11,7 @@ namespace ABME
     std::vector<Individual*> Interactor::Interact(Environment& environment, std::vector<std::pair<Individual*, Individual*>> colocations)
     {
         std::vector<Individual*> newIndividuals;
+		auto remainingBirths = GlobalSettings::MaxPopulationSize - environment.CountPopulation();
         for (auto [first, second] : colocations)
         {
             auto newIndividual = Interact(environment, *first, *second);
@@ -18,6 +19,8 @@ namespace ABME
             {
                 newIndividuals.push_back(newIndividual);
             }
+
+			if (--remainingBirths <= 0) break;
         }
 
         return newIndividuals;
@@ -30,9 +33,6 @@ namespace ABME
     {
         // If chromosomes have to be equal length, check to make sure.
         if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsGeneticCode.Length() != second.ItsGeneticCode.Length()) return nullptr;
-
-        // If we've hit the pop limit, do nothing.
-        if (environment.CountPopulation() > GlobalSettings::MaxPopulationSize) return nullptr;
 
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
