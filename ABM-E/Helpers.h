@@ -131,7 +131,7 @@ namespace ABME
 
             PatternMap map;
 #pragma omp parallel for
-            for (int i = 522; i < GlobalSettings::NumGenes; ++i)
+            for (int i = 522; i < GlobalSettings::NumBehaviourGenes; ++i)
             {
                 map[GetParentPattern(i)] = i;
             }
@@ -168,20 +168,20 @@ namespace ABME
                 auto pattern = GetParentPattern(key);
                 for (auto j = 0; j < pattern.size(); ++j)
                 {
-                    std::cout << " | " << pattern[j];
+                    std::cout << " | " << pattern[j] + '0';
                 }
-                std::cout << " | => " << val << std::endl;
+                std::cout << " | => " << val + '0' << std::endl;
             }
         }
 
 
-        /// Generates a random chromosome of the requested length.
-        inline GeneSet GenerateRandomChromosome(int length, bool simpleGenesFirst, int valuePossibilities)
+        /// Generates a random behaviour chromosome of the requested length.
+        inline GeneSet GenerateRandomBehaviourChromosome(int length, bool simpleGenesFirst, int valuePossibilities)
         {
             std::uniform_int_distribution<std::mt19937::result_type> dist(0, valuePossibilities - 1);
 
             GeneSet chromosome;
-            auto geneIndices = GlobalSettings::ShuffleIndices(length, simpleGenesFirst);
+            auto geneIndices = GlobalSettings::ShuffleIndices(length, simpleGenesFirst, GlobalSettings::NumBehaviourGenes);
             for (auto& i : geneIndices)
             {
                 chromosome[i] = dist(GlobalSettings::RNG);
@@ -193,7 +193,7 @@ namespace ABME
 
 
         /// Copies the chromosome gene indices but changes the values.
-        inline GeneSet GenerateRandomChromosome(GeneSet& prototype, int valuePossibilities)
+        inline GeneSet GenerateRandomBehaviourChromosome(GeneSet& prototype, int valuePossibilities)
         {
             std::uniform_int_distribution<std::mt19937::result_type> dist(0, valuePossibilities - 1);
 
@@ -205,6 +205,37 @@ namespace ABME
 
             return chromosome;
         }
+
+
+		/// Generates a random vitality chromosome of the required length.
+		inline GeneSet GenerateRandomVitalityChromosome(int length)
+		{
+			std::uniform_int_distribution<std::mt19937::result_type> dist(0, 1);
+
+			GeneSet chromosome;
+			auto geneIndices = GlobalSettings::ShuffleIndices(length, false, GlobalSettings::NumVitalityGenes);
+			for (auto& i : geneIndices)
+			{
+				chromosome[i] = dist(GlobalSettings::RNG);
+			}
+
+			return chromosome;
+		}
+
+
+		/// Copies the chromosome gene indices but changes the values.
+		inline GeneSet GenerateRandomVitalityChromosome(GeneSet& prototype)
+		{
+			std::uniform_int_distribution<std::mt19937::result_type> dist(0, 1);
+
+			GeneSet chromosome;
+			for (auto& [index, value] : prototype)
+			{
+				chromosome[index] = dist(GlobalSettings::RNG);
+			}
+
+			return chromosome;
+		}
 
 
         /// Converts a chromosome into two vectors.

@@ -8,7 +8,7 @@ namespace ABME
 {
     class Individual;
 
-    enum DrawMode
+    enum class DrawMode
     {
         DrawModeLength,
         DrawModeMutIns,

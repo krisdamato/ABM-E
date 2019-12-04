@@ -12,7 +12,7 @@ namespace ABME
         Barcode(GeneSet& chromosome, int width, int height);
         Barcode(const Barcode& rhs);
 
-        void ComputeMetrics(cv::Vec2i& movement, int& cellsActive) const;
+        void ComputeMetrics(cv::Vec2i& movement) const;
         int CountLiveCells() const;
         void Draw(std::string& windowName) const;
         void DropTiles(cv::Mat& environment, int x, int y, int& numFoodTiles, std::vector<cv::Rect>& regions, std::vector<int>& balances, bool useActiveCells) const;
@@ -22,10 +22,11 @@ namespace ABME
         void Intersect(const Barcode& rhs);
         void SetStringRepresentation(const std::string& rep);
         void Subtract(const Barcode& rhs);
-        void Update(bool usePatternMap, bool useLongPatterns);
+        void Update(bool usePatternMap, bool useLongPatterns, int& vitality, GeneSet& vitalityGenes);
         bool UpdateWorld(cv::Mat& environment, int x, int y, double probability);
 
     protected:
+		void ComputeVitality(std::string& previousBarcode, GeneSet& vitalityChromosome, int& vitality) const;
         inline void Update1D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto = nullptr);
         inline void Update2D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto = nullptr);
         inline void Update2DWithPatternMap(std::string& oldBarcode, int patternWidth);

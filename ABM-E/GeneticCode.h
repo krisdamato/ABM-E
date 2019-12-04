@@ -10,7 +10,7 @@ namespace ABME
     public:
         inline size_t Length() const
         {
-            return BehaviourGenes.Length() + InteractionGenes.Length();
+            return BehaviourGenes.Length() + VitalityGenes.Length();
         }
 
 
@@ -51,10 +51,7 @@ namespace ABME
 
 
         Chromosome<TParam> BehaviourGenes = Chromosome<TParam>(GlobalSettings::BehaviourGenePossibilities); // Behaviour genes can have values in {0, 1}
-        Chromosome<TParam> InteractionGenes = Chromosome<TParam>(GlobalSettings::InteractionGenePossibilities); // Interaction genes can have values in {0, ..., 3}
-
-        TParam ProgrammedLifespan = 200;
-        TParam ReproductiveAge = 0;
+		Chromosome<TParam> VitalityGenes = Chromosome<TParam>(GlobalSettings::VitalityGenePossibilities); // Vitality genes can have values in {-1, 1}, but are represented as {0, 1}.
 
         static const int TMax = std::numeric_limits<TParam>::max();
 

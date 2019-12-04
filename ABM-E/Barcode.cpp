@@ -26,49 +26,58 @@ namespace ABME
 
     /// Computes movement from current barcode, assuming that
     /// barcode pixels are alternating in the directions (+i, +j, -i, -j).
-    /// Also computes current number of active cells.
-    /// Only considers the inner 14 x 14 cells (not the boundary cells). 
-    void Barcode::ComputeMetrics(Vec2i& movement, int& cellsActive) const
+    void Barcode::ComputeMetrics(Vec2i& movement) const
     {
         float positiveX = 0.f;
         float positiveY = 0.f;
 
-        for (auto i = width + 1; i < barcode.size() - (width + 1); ++i)
+		auto k = 0;
+        for (auto i = 0; i < barcode.size(); ++i)
         {
             // Ignore barcode elements on the left/right boundaries.
             auto x = i % width;
-            if (x == 0 || x == 15) continue;
+			auto y = i / width;
+            if (x == 0 || x == width - 1 || y == 0 || y == height - 1) continue;
 
             // Note: boundary cells are influenced by border effects.
             if (barcode[i] != 0)
             {
-                // Increment consumption.
-                cellsActive += 1;
-
                 // Normalise movement increments so that updates are fair 
                 // with respect to cells available. 
-                switch (i % 4)
+                switch (k % 4)
                 {
                 case 0:
                     positiveX += 1.0f;
                     break;
                 case 1:
-                    positiveY += 0.75f;
+                    positiveY += 1.0f;
                     break;
                 case 2:
-                    positiveX -= 0.75f;
+                    positiveX -= 1.0f;
                     break;
                 case 3:
                     positiveY -= 1.0f;
                     break;
                 }
             }
+
+			++k;
         }
 
         // Update motion.
         movement[0] = int(positiveX);
         movement[1] = int(positiveY);
     }
+
+
+	void Barcode::ComputeVitality(std::string& previousBarcode, GeneSet& vitalityGenes, int& vitality) const
+	{
+		for (auto& [key, val] : vitalityGenes)
+		{
+			vitality += barcode[key] == val && previousBarcode[key] != barcode[key] ? 1 : -1;
+		}
+		vitality = min(10, vitality);
+	}
 
 
     int Barcode::CountLiveCells() const
@@ -223,8 +232,7 @@ namespace ABME
 
     
     /// Updates the barcode pattern by one step.
-    /// Note: only allows up to 3x3 patterns.
-    void Barcode::Update(bool usePatternMap, bool useLongPatterns)
+    void Barcode::Update(bool usePatternMap, bool useLongPatterns, int& vitality, GeneSet& vitalityGenes)
     {
         auto oldBarcode = barcode;
 
@@ -253,6 +261,10 @@ namespace ABME
             // Do the 5x5 2D genes next...
             if (useLongPatterns) Update2DWithPatternMap(oldBarcode, 5);
         }
+
+		// After barcode update...
+		// ...check for differences at vitality points, and update vitality.
+		ComputeVitality(oldBarcode, vitalityGenes, vitality);
     }
 
 

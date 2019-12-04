@@ -30,20 +30,21 @@ namespace ABME
         std::uniform_int_distribution<std::mt19937::result_type> distHeight(0, Map.rows - GlobalSettings::BarcodeSize);
 
         // Create individuals.
-        auto prototypeBehaviour = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
-        auto prototypeInteraction = Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::InteractionGenePossibilities);
+        auto prototypeBehaviour = Helpers::GenerateRandomBehaviourChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
+		auto prototypeVitality = Helpers::GenerateRandomVitalityChromosome(geneticLength);
 
         for (auto i = 0; i < numIndividuals; ++i)
         {
             GeneticCode<ushort> geneticCode;
 
             geneticCode.BehaviourGenes.Genes = useSameGeneIndices ? 
-                Helpers::GenerateRandomChromosome(prototypeBehaviour, GlobalSettings::BehaviourGenePossibilities) : 
-                Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
-            geneticCode.InteractionGenes.Genes = useSameGeneIndices ? 
-                Helpers::GenerateRandomChromosome(prototypeInteraction, GlobalSettings::InteractionGenePossibilities) :
-                Helpers::GenerateRandomChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::InteractionGenePossibilities);
+                Helpers::GenerateRandomBehaviourChromosome(prototypeBehaviour, GlobalSettings::BehaviourGenePossibilities) : 
+                Helpers::GenerateRandomBehaviourChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
 
+			geneticCode.VitalityGenes.Genes = useSameGeneIndices ?
+				Helpers::GenerateRandomVitalityChromosome(prototypeBehaviour) :
+				Helpers::GenerateRandomVitalityChromosome(geneticLength);
+            
             Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
         }
 
@@ -363,54 +364,52 @@ namespace ABME
             std::stringstream log;
             log << i << "] Num. individuals = " << Individuals.size() << "(" << born << " born this cycle, " << killed << " killed, " << diedNaturally << " died naturally)" << std::endl;
             std::map<int, int> genePoolBehaviour;
-            std::map<int, int> genePoolInteraction;
+			std::map<int, int> genePoolVitality;
             std::map<int, int> genePool;
 
-            float age = 0.f, reproductiveAge = 0.f, programmedDeath = 0.f;
-            double mrfBehaviour = 0, mrfInteraction = 0;
-            double mriBehaviour = 0, mriInteraction = 0;
-            double mrdBehaviour = 0, mrdInteraction = 0;
-            double mrtBehaviour = 0, mrtInteraction = 0;
-            double mrm = 0;
+            float age = 0.f;
+            double mrfBehaviour = 0;
+            double mriBehaviour = 0;
+            double mrdBehaviour = 0;
+            double mrtBehaviour = 0;
+			double mrfVitality = 0;
+			double mriVitality = 0;
+			double mrdVitality = 0;
+			double mrtVitality = 0; 
+			double mrm = 0;
             double mrfParams = 0;
             for (auto& individual : Individuals)
             {
-                genePoolBehaviour[individual->ItsGeneticCode.BehaviourGenes.Length()]++;
-                genePoolInteraction[individual->ItsGeneticCode.InteractionGenes.Length()]++;
+				genePoolBehaviour[individual->ItsGeneticCode.BehaviourGenes.Length()]++;
+				genePoolVitality[individual->ItsGeneticCode.VitalityGenes.Length()]++;
                 genePool[individual->ItsGeneticCode.Length()]++;
 
                 age += individual->Age;
-                reproductiveAge += individual->ItsGeneticCode.ReproductiveAge;
-                programmedDeath += individual->ItsGeneticCode.ProgrammedLifespan;
-                
-                mrfBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate();
-                mriBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate();
-                mrdBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate();
-                mrtBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();
-                
-                mrfInteraction += individual->ItsGeneticCode.InteractionGenes.GetFlipMutationRate();
-                mriInteraction += individual->ItsGeneticCode.InteractionGenes.GetInsertionMutationRate();
-                mrdInteraction += individual->ItsGeneticCode.InteractionGenes.GetDeletionMutationRate();
-                mrtInteraction += individual->ItsGeneticCode.InteractionGenes.GetTransMutationRate();
+				mrfBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate();
+				mriBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate();
+				mrdBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate();
+				mrtBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();                
+				mrfVitality += individual->ItsGeneticCode.VitalityGenes.GetFlipMutationRate();
+				mriVitality += individual->ItsGeneticCode.VitalityGenes.GetInsertionMutationRate();
+				mrdVitality += individual->ItsGeneticCode.VitalityGenes.GetDeletionMutationRate();
+				mrtVitality += individual->ItsGeneticCode.VitalityGenes.GetTransMutationRate();
                 
                 mrm += individual->ItsGeneticCode.GetMetaMutationRate();
                 mrfParams += individual->ItsGeneticCode.GetFlipMutationRate();
             }
             age /= Individuals.size();
-            reproductiveAge /= Individuals.size();
-            programmedDeath /= Individuals.size();
-            mrfBehaviour /= Individuals.size();
-            mriBehaviour /= Individuals.size();
-            mrdBehaviour /= Individuals.size();
-            mrtBehaviour /= Individuals.size();
-            mrfInteraction /= Individuals.size();
-            mriInteraction /= Individuals.size();
-            mrdInteraction /= Individuals.size();
-            mrtInteraction /= Individuals.size();
+			mrfBehaviour /= Individuals.size();
+			mriBehaviour /= Individuals.size();
+			mrdBehaviour /= Individuals.size();
+			mrtBehaviour /= Individuals.size();
+			mrfVitality /= Individuals.size();
+			mriVitality /= Individuals.size();
+			mrdVitality /= Individuals.size();
+			mrtVitality /= Individuals.size();
             mrm /= Individuals.size();
             mrfParams /= Individuals.size();
 
-            float lengthOverall = 0.f, lengthBehaviour = 0.f, lengthInteraction = 0.f;
+            float lengthOverall = 0.f, lengthBehaviour = 0.f, lengthVitality = 0.f;
             for (auto&[length, count] : genePool)
             {
                 log << "Overall genetic code length " << length << ": " << count << " individuals.\n";
@@ -421,37 +420,34 @@ namespace ABME
             {
                 lengthBehaviour += length * count;
             }
-            
-            for (auto&[length, count] : genePoolInteraction)
-            {
-                lengthInteraction += length * count;
-            }
 
+			for (auto& [length, count] : genePoolVitality)
+			{
+				lengthVitality += length * count;
+			}
+            
             lengthOverall /= Individuals.size();
             lengthBehaviour /= Individuals.size();
-            lengthInteraction /= Individuals.size();
+			lengthVitality /= Individuals.size();
 
             log << "\n[Overall] Avg. chromosome length: " << lengthOverall << std::endl;
-            log << "[Behaviour] Avg. chromosome length: " << lengthBehaviour << std::endl;
-            log << "[Interaction] Avg. chromosome length: " << lengthInteraction << std::endl;
+			log << "[Behaviour] Avg. chromosome length: " << lengthBehaviour << std::endl;
+			log << "[Interaction] Avg. chromosome length: " << lengthVitality << std::endl;
             log << "\nAvg. age: " << age << std::endl;
-            log << "Avg. reproductive age: " << reproductiveAge << std::endl;
-            log << "Avg. lifespan: " << programmedDeath << std::endl;
             log << "\n[Behaviour] Avg. mut. rate (flip): " << mrfBehaviour << std::endl;
             log << "[Behaviour] Avg. mut. rate (ins.): " << mriBehaviour << std::endl;
             log << "[Behaviour] Avg. mut. rate (del.): " << mrdBehaviour << std::endl;
             log << "[Behaviour] Avg. mut. rate (trans.): " << mrtBehaviour << std::endl;
-            log << "\n[Interaction] Avg. mut. rate (flip): " << mrfInteraction << std::endl;
-            log << "[Interaction] Avg. mut. rate (ins.): " << mriInteraction << std::endl;
-            log << "[Interaction] Avg. mut. rate (del.): " << mrdInteraction << std::endl;
-            log << "[Interaction] Avg. mut. rate (trans.): " << mrtInteraction << std::endl;
+			log << "\n[Interaction] Avg. mut. rate (flip): " << mrfVitality << std::endl;
+			log << "[Interaction] Avg. mut. rate (ins.): " << mriVitality << std::endl;
+			log << "[Interaction] Avg. mut. rate (del.): " << mrdVitality << std::endl;
+			log << "[Interaction] Avg. mut. rate (trans.): " << mrtVitality << std::endl;
             log << "\n[Params] Avg. mut. rate (flip): " << mrfParams << std::endl;
             log << "Avg. mut. rate (meta): " << mrm << std::endl;
 
             // Report most popular genes.
             std::vector<GeneSet> chromosomesBehaviour, chromosomesInteraction;
             for (auto& ind : Individuals) chromosomesBehaviour.push_back(ind->ItsGeneticCode.BehaviourGenes.Genes);
-            //for (auto& ind : Individuals) chromosomesInteraction.push_back(ind->ItsGeneticCode.BehaviourGenes.Genes);
 
             auto geneCountSet = Helpers::GeneStatistics(chromosomesBehaviour);
 
@@ -527,7 +523,7 @@ namespace ABME
         static int born = 0; 
         static int diedNaturally = 0;
 
-        std::uniform_int_distribution<std::mt19937::result_type> dist(0, 2 * GlobalSettings::DistanceStep);
+        std::uniform_int_distribution<std::mt19937::result_type> dist(0, 2);
 
         // Take an additive snapshot of the world + barcodes.
         Snapshot = Map.clone();
@@ -543,14 +539,14 @@ namespace ABME
             individual->Update(Snapshot, Colocations);
             
             // Add random ("Brownian") motion.
-            int newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
-            int newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
+            int newX = individual->X + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
+            int newY = individual->Y + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
             ClampPositions(newX, newY);
 
             while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
             {
-                newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
-                newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
+                newX = individual->X + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
+                newY = individual->Y + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
                 ClampPositions(newX, newY);
             }
 
@@ -572,45 +568,56 @@ namespace ABME
             }
         }
 
-        // Interact colocations.
-        for (auto it = Colocations.begin(), end = Colocations.end(); it != end; it = Colocations.upper_bound(it->first))
+        // Get colocations.
+		std::vector<std::pair<Individual*, Individual*>> individualPairs;
+		for (auto it = Colocations.begin(), end = Colocations.end(); it != end; it = Colocations.upper_bound(it->first))
+		{
+			auto& location = it->first;
+			auto count = Colocations.count(location);
+			if (count > 1)
+			{
+				auto individuals = Colocations.equal_range(location);
+				std::vector<Individual*> colocated;
+				for (auto it2 = individuals.first; it2 != individuals.second; ++it2)
+				{
+					colocated.push_back(it2->second);
+				}
+
+				for (auto i = 0; i < colocated.size() - 1; i += 2)
+				{
+					individualPairs.push_back(std::make_pair(colocated[i], colocated[i + 1]));
+				}
+			}
+		}
+
+		// Shuffle pairs. (Necessary if we are preventing reproduction artificially, since the multi_map
+		// implementations returns objects closest to (0, 0) first and thus introduces bias.
+		auto rng = std::default_random_engine{};
+		std::shuffle(std::begin(individualPairs), std::end(individualPairs), rng);
+
+        // Interact 'em!
+        auto newIndividuals = Interactor::Interact(*this, individualPairs);
+        if (newIndividuals.size() > 0)
         {
-            auto& location = it->first;
-            auto count = Colocations.count(location);
-            if (count > 1)
-            {
-                auto individuals = Colocations.equal_range(location);
-                std::vector<Individual*> colocated;
-                for (auto it2 = individuals.first; it2 != individuals.second; ++it2)
+            // Add the individuals to our list.
+            born += newIndividuals.size();
+            for (auto& individual : newIndividuals)
+            { 
+                int newX = individual->X + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
+                int newY = individual->Y + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
+                ClampPositions(newX, newY);
+
+                while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
                 {
-                    colocated.push_back(it2->second);
+					newX = individual->X + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
+					newY = individual->Y + GlobalSettings::DistanceStep * (dist(GlobalSettings::RNG) - 1);
+                    ClampPositions(newX, newY);
                 }
 
-                // Interact 'em!
-                auto newIndividuals = Interactor::Interact(*this, colocated);
-                if (newIndividuals.size() > 0)
-                {
-                    // Add the individuals to our list.
-                    born += newIndividuals.size();
-                    for (auto& individual : newIndividuals)
-                    { 
-                        int newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
-                        int newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
-                        ClampPositions(newX, newY);
+                individual->X = newX;
+                individual->Y = newY;
 
-                        while (Individual::DetectCollision(Rect(newX, newY, GlobalSettings::BarcodeSize, GlobalSettings::BarcodeSize), Regions))
-                        {
-                            newX = individual->X + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
-                            newY = individual->Y + GlobalSettings::DistanceStep * (((int)dist(GlobalSettings::RNG) - GlobalSettings::DistanceStep) / GlobalSettings::DistanceStep);
-                            ClampPositions(newX, newY);
-                        }
-
-                        individual->X = newX;
-                        individual->Y = newY;
-
-                        Individuals.push_back(std::unique_ptr<Individual>(individual));
-                    }
-                }
+                Individuals.push_back(std::unique_ptr<Individual>(individual));
             }
         }
 

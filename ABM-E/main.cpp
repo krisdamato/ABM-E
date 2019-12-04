@@ -20,8 +20,6 @@ int main(int argc, char** argv)
     GlobalSettings::Initialise(numThreads);
     GlobalSettings::ForceEqualChromosomeReproductions = false;
     GlobalSettings::DistanceStep = 4;
-    GlobalSettings::AllowFreeTileMovement = true;
-    GlobalSettings::TileDepositsEqualDifference = false;
     GlobalSettings::MutationRatesEvolve = true;
     GlobalSettings::UseSingleStructuralMutationRate = false;
 
@@ -30,9 +28,10 @@ int main(int argc, char** argv)
 
     // Create an environment and individuals.
     Environment environment(128, 128);
-    environment.AddRegion(cv::Rect(0, 0, 56, 128), 0.05f);
-    environment.AddRegion(cv::Rect(72, 0, 56, 128), 0.03f);
-    environment.AddRegion(cv::Rect(56, 56, 16, 16), 0.00f);
+    //environment.AddRegion(cv::Rect(0, 0, 56, 128), 0.02f);
+    //environment.AddRegion(cv::Rect(72, 0, 56, 128), 0.05f);
+    //environment.AddRegion(cv::Rect(56, 56, 16, 16), 0.00f);
+	environment.AddRegion(cv::Rect(0, 0, 128, 128), 0.02f);
 
     environment.Initialise({ { 4, 150 }, { 5, 150} }, false, true);
 
