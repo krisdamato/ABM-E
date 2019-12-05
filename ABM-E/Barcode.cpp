@@ -70,15 +70,6 @@ namespace ABME
     }
 
 
-	void Barcode::ComputeVitality(std::string& previousBarcode, GeneSet& vitalityGenes, int& vitality) const
-	{
-		for (auto& [key, val] : vitalityGenes)
-		{
-			vitality += barcode[key] == val && previousBarcode[key] != barcode[key] ? 1 : -1;
-		}
-	}
-
-
     int Barcode::CountLiveCells() const
     {
         auto count = 0;
@@ -231,7 +222,7 @@ namespace ABME
 
     
     /// Updates the barcode pattern by one step.
-    void Barcode::Update(bool usePatternMap, bool useLongPatterns, int& vitality, GeneSet& vitalityGenes)
+    void Barcode::Update(bool usePatternMap, bool useLongPatterns, float& vitality)
     {
         auto oldBarcode = barcode;
 
@@ -240,8 +231,8 @@ namespace ABME
             for (auto&[key, val] : behaviourGenes)
             {
                 std::string pattern = Helpers::GetParentPattern(key);
-                if (pattern.size() <= 3) Update1D(pattern, val, oldBarcode);
-                else if (pattern.size() == 9) Update2D(pattern, val, oldBarcode);
+                if (pattern.size() <= 3) Update1D(pattern, val, oldBarcode, vitality);
+                else if (pattern.size() == 9) Update2D(pattern, val, oldBarcode, vitality);
             }
         }
         else
@@ -251,19 +242,17 @@ namespace ABME
             {
                 if (key >= 10) break;
                 std::string pattern = Helpers::GetParentPattern(key);
-                Update1D(pattern, val, oldBarcode);
+                Update1D(pattern, val, oldBarcode, vitality);
             }
 
             // Do the 3x3 2D genes next.
-            Update2DWithPatternMap(oldBarcode, 3);
+            Update2DWithPatternMap(oldBarcode, 3, vitality);
 
             // Do the 5x5 2D genes next...
-            if (useLongPatterns) Update2DWithPatternMap(oldBarcode, 5);
+            if (useLongPatterns) Update2DWithPatternMap(oldBarcode, 5, vitality);
         }
 
-		// After barcode update...
-		// ...check for differences at vitality points, and update vitality.
-		ComputeVitality(oldBarcode, vitalityGenes, vitality);
+		vitality -= 10;
     }
 
 
@@ -317,11 +306,22 @@ namespace ABME
     }
 
 
-    void Barcode::Update1D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto)
+	inline void Barcode::InterpretGeneValue(uchar& value, int& behaviourEffect, int& vitalityEffect)
+	{
+		behaviourEffect = value / 2;
+		vitalityEffect = 2 * (value % 2) - 1;
+	}
+
+
+	void Barcode::Update1D(std::string& pattern, uchar& replacement, std::string& oldBarcode, float& vitality, std::string* updateInto)
     {
         std::string& update = updateInto == nullptr ? barcode : *updateInto;
+		int vitalityEffect = 0;
+		int behaviourEffect = 0;
+		InterpretGeneValue(replacement, behaviourEffect, vitalityEffect);
 
-#pragma omp parallel for
+		int pVitality = 0;
+#pragma omp parallel for reduction(+: pVitality)
         for (int j = 0; j < height; ++j)
         {
             std::string subBarcode = oldBarcode.substr(j * width, width);
@@ -340,25 +340,34 @@ namespace ABME
             {
                 for (auto& pos : positions)
                 {
-                    update[width * j + pos] = replacement;
+                    update[width * j + pos] = behaviourEffect;
+					pVitality += vitalityEffect;
                 }
             }
             else if (pattern.size() == 3)
             {
                 for (auto& pos : positions)
                 {
-                    update[width * j + pos + 1] = replacement;
+                    update[width * j + pos + 1] = behaviourEffect;
+					pVitality += GlobalSettings::Patterns3x1 * vitalityEffect;
                 }
             }
         }
+
+		vitality += (float) pVitality / GlobalSettings::Patterns3x3;
     }
 
 
-    void Barcode::Update2D(std::string& pattern, uchar& replacement, std::string& oldBarcode, std::string* updateInto)
+    void Barcode::Update2D(std::string& pattern, uchar& replacement, std::string& oldBarcode, float& vitality, std::string* updateInto)
     {
         std::string& update = updateInto == nullptr ? barcode : *updateInto;
+		int vitalityEffect = 0;
+		int behaviourEffect = 0;
+		InterpretGeneValue(replacement, behaviourEffect, vitalityEffect);
+		const int patternSize = pattern.size();
 
-#pragma omp parallel for
+		int pVitality = 0;
+#pragma omp parallel for reduction(+: pVitality)
         for (int j = 0; j < height - 2; ++j)
         {
             auto subBarcode = oldBarcode.substr(j * width, width);
@@ -389,20 +398,27 @@ namespace ABME
             // Replace in the new pattern.
             for (auto& pos : positions)
             {
-                update[width * (j + 1) + pos + 1] = replacement;
+                update[width * (j + 1) + pos + 1] = behaviourEffect;
+				pVitality += vitalityEffect;
             }
         }
+
+		// This assumes that the patterns are 3x3. Throws an exception otherwise.
+		vitality += pVitality;
+
+		if (patternSize != 9) throw std::exception("Wrong pattern size for the assumptions of this function.");
     }
 
 
-    void Barcode::Update2DWithPatternMap(std::string& oldBarcode, int patternWidth)
+    void Barcode::Update2DWithPatternMap(std::string& oldBarcode, int patternWidth, float& vitality)
     {
         auto& map = patternWidth <= 3 ? Individual::ShortGenePatternMap : Individual::LongGenePatternMap;
 
         const int edgeLimit = patternWidth - 1;
         const int replaceOffset = (patternWidth - 1) / 2;
 
-#pragma omp parallel for
+		int pVitality = 0;
+#pragma omp parallel for reduction(+: pVitality)
         for (int j = 0; j < height - edgeLimit; ++j)
         {
             for (int i = 0; i < width - edgeLimit; ++i)
@@ -420,9 +436,19 @@ namespace ABME
                 // Do we have this gene?
                 if (behaviourGenes.count(geneIndex) == 0) continue;
 
+				int vitalityEffect = 0;
+				int behaviourEffect = 0;
+				InterpretGeneValue(behaviourGenes[geneIndex], behaviourEffect, vitalityEffect);
+
                 // Replace at the right position.
-                barcode[width * (j + replaceOffset) + i + replaceOffset] = behaviourGenes[geneIndex];
+                barcode[width * (j + replaceOffset) + i + replaceOffset] = behaviourEffect;
+				pVitality += vitalityEffect;
             }
         }
+
+		vitality += pVitality;
+
+		// This assumes that the patterns are 3x3. Throws an exception otherwise.
+		if (patternWidth * patternWidth != 9) throw std::exception("Wrong pattern size for the assumptions of this function.");
     }
 }

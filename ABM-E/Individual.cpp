@@ -12,7 +12,7 @@ namespace ABME
 
     PatternMap Individual::ShortGenePatternMap = Helpers::GenerateShortPatternMap();
     PatternMap Individual::LongGenePatternMap = Helpers::GenerateLongPatternMap();
-
+	int Individual::nextID = 0;
 
     Individual::Individual(Environment& environment, GeneticCode<ushort> geneticCode) : ItsEnvironment(environment), ItsGeneticCode(geneticCode)
     {
@@ -87,12 +87,11 @@ namespace ABME
         CurrentBarcode->Input(interactionRegion);
 
         // Update barcode once.
-        CurrentBarcode->Update(true, ItsGeneticCode.BehaviourGenes.HasLargePatterns, Vitality, ItsGeneticCode.VitalityGenes.Genes);
+        CurrentBarcode->Update(true, ItsGeneticCode.BehaviourGenes.HasLargePatterns, Vitality);
 
 		// Update individual parameters.
 		Age++;
-		Vitality--;
-		if (Vitality <= 0 || Vitality >= 100)
+		if (Vitality <= -100 || Vitality >= 100)
 		{
 			Alive = false;
 			return;

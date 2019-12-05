@@ -68,7 +68,6 @@ namespace ABME
         
         // Recombine chromosomes.
         newGeneticCode.BehaviourGenes = RecombineChromosomes(firstGenetics.BehaviourGenes, secondGenetics.BehaviourGenes, dist, newGeneticCode.GetMetaMutationRate(), GlobalSettings::NumBehaviourGenes);
-		newGeneticCode.VitalityGenes = RecombineChromosomes(firstGenetics.VitalityGenes, secondGenetics.VitalityGenes, dist, newGeneticCode.GetMetaMutationRate(), GlobalSettings::NumVitalityGenes);
 
         // Create an individual with this chromosome.
         auto offspring = new Individual(first.ItsEnvironment, newGeneticCode);

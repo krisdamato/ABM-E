@@ -207,37 +207,6 @@ namespace ABME
         }
 
 
-		/// Generates a random vitality chromosome of the required length.
-		inline GeneSet GenerateRandomVitalityChromosome(int length)
-		{
-			std::uniform_int_distribution<std::mt19937::result_type> dist(0, 1);
-
-			GeneSet chromosome;
-			auto geneIndices = GlobalSettings::ShuffleIndices(length, false, GlobalSettings::NumVitalityGenes);
-			for (auto& i : geneIndices)
-			{
-				chromosome[i] = dist(GlobalSettings::RNG);
-			}
-
-			return chromosome;
-		}
-
-
-		/// Copies the chromosome gene indices but changes the values.
-		inline GeneSet GenerateRandomVitalityChromosome(GeneSet& prototype)
-		{
-			std::uniform_int_distribution<std::mt19937::result_type> dist(0, 1);
-
-			GeneSet chromosome;
-			for (auto& [index, value] : prototype)
-			{
-				chromosome[index] = dist(GlobalSettings::RNG);
-			}
-
-			return chromosome;
-		}
-
-
         /// Converts a chromosome into two vectors.
         inline void ConvertChromosomeToVectors(GeneSet& chromosome, std::vector<int>& geneIndices, std::vector<uchar>& geneValues)
         {

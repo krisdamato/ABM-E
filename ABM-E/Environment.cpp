@@ -31,7 +31,6 @@ namespace ABME
 
         // Create individuals.
         auto prototypeBehaviour = Helpers::GenerateRandomBehaviourChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
-		auto prototypeVitality = Helpers::GenerateRandomVitalityChromosome(geneticLength);
 
         for (auto i = 0; i < numIndividuals; ++i)
         {
@@ -40,10 +39,6 @@ namespace ABME
             geneticCode.BehaviourGenes.Genes = useSameGeneIndices ? 
                 Helpers::GenerateRandomBehaviourChromosome(prototypeBehaviour, GlobalSettings::BehaviourGenePossibilities) : 
                 Helpers::GenerateRandomBehaviourChromosome(geneticLength, useSimpleGenesFirst, GlobalSettings::BehaviourGenePossibilities);
-
-			geneticCode.VitalityGenes.Genes = useSameGeneIndices ?
-				Helpers::GenerateRandomVitalityChromosome(prototypeBehaviour) :
-				Helpers::GenerateRandomVitalityChromosome(geneticLength);
             
             Individuals.push_back(std::make_unique<Individual>(*this, geneticCode));
         }
@@ -389,18 +384,13 @@ namespace ABME
             for (auto& individual : Individuals)
             {
 				genePoolBehaviour[individual->ItsGeneticCode.BehaviourGenes.Length()]++;
-				genePoolVitality[individual->ItsGeneticCode.VitalityGenes.Length()]++;
                 genePool[individual->ItsGeneticCode.Length()]++;
 
                 age += individual->Age;
 				mrfBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetFlipMutationRate();
 				mriBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetInsertionMutationRate();
 				mrdBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetDeletionMutationRate();
-				mrtBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();                
-				mrfVitality += individual->ItsGeneticCode.VitalityGenes.GetFlipMutationRate();
-				mriVitality += individual->ItsGeneticCode.VitalityGenes.GetInsertionMutationRate();
-				mrdVitality += individual->ItsGeneticCode.VitalityGenes.GetDeletionMutationRate();
-				mrtVitality += individual->ItsGeneticCode.VitalityGenes.GetTransMutationRate();
+				mrtBehaviour += individual->ItsGeneticCode.BehaviourGenes.GetTransMutationRate();   
                 
                 mrm += individual->ItsGeneticCode.GetMetaMutationRate();
                 mrfParams += individual->ItsGeneticCode.GetFlipMutationRate();

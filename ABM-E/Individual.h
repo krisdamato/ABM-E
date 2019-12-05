@@ -46,7 +46,10 @@ namespace ABME
         static PatternMap LongGenePatternMap;
 
     protected:
+		static int nextID;
+
         bool Alive = true;
-		int Vitality = 10;
+		float Vitality = 0.f;
+		int ID = nextID++;
     };
 }
