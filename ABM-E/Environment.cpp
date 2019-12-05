@@ -351,6 +351,14 @@ namespace ABME
     }
 
 
+	/// Clears all tiles and re-adds them back.
+	void Environment::ResetRegions()
+	{
+		Map = Scalar(0);
+		InitialiseTiles();
+	}
+
+
     void Environment::RunMetrics(int& killed, int& born, int& diedNaturally) const
     {
         static int i = 0;
@@ -651,8 +659,6 @@ namespace ABME
 
     void Environment::InitialiseTiles()
     {
-        std::uniform_real_distribution<> dist(0.0, 1.0);
-
         for (auto i = 0; i < Regions.size(); ++i)
         {
             GenerateRandomTiles(Regions[i], InitialRegionActiveTiles[i]);

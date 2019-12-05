@@ -92,7 +92,7 @@ namespace ABME
 		// Update individual parameters.
 		Age++;
 		Vitality--;
-		if (Vitality <= 0)
+		if (Vitality <= 0 || Vitality >= 100)
 		{
 			Alive = false;
 			return;

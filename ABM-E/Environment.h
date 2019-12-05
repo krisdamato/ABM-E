@@ -43,6 +43,7 @@ namespace ABME
         void InitialiseTiles();
         void RegisterActiveTileAddition(int regionIndex, int numTiles);
         void ReleasePopulation();
+		void ResetRegions();
         void RunMetrics(int& killed, int& born, int& diedNaturally) const;
         void ToggleDrawMode();
         void Update();

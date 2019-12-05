@@ -14,13 +14,15 @@ namespace ABME
 		auto remainingBirths = GlobalSettings::MaxPopulationSize - environment.CountPopulation();
         for (auto [first, second] : colocations)
         {
+			if (remainingBirths <= 0) break;
+
             auto newIndividual = Interact(environment, *first, *second);
             if (newIndividual != nullptr)
             {
                 newIndividuals.push_back(newIndividual);
             }
 
-			if (--remainingBirths <= 0) break;
+			--remainingBirths;
         }
 
         return newIndividuals;

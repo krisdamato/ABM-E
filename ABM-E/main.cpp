@@ -99,6 +99,11 @@ int main(int argc, char** argv)
             intruderGeneticLength--;
             std::cout << "Genetic length of intruder population set to " << intruderGeneticLength << std::endl;
             break;
+		case ';':
+			environment.ResetRegions();
+			log << "Caused a crisis by rearranging all tiles.\n";
+			Logger::Instance() << log.str();
+			break;
         case '#':
             environment.AddPopulation(GlobalSettings::CrisisPopulationSize, intruderGeneticLength, false, true);
             std::cout << "Added a new population of size " << GlobalSettings::CrisisPopulationSize << " and genetic length " << intruderGeneticLength << std::endl;

@@ -76,7 +76,6 @@ namespace ABME
 		{
 			vitality += barcode[key] == val && previousBarcode[key] != barcode[key] ? 1 : -1;
 		}
-		vitality = min(10, vitality);
 	}
 
 

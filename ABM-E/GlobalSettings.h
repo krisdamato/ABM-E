@@ -27,7 +27,7 @@ namespace ABME
         static bool MutationRatesEvolve;
         static bool UseSingleStructuralMutationRate;
         static double BaseMetaMutationRate;
-		static const int MaxPopulationSize = 600;
+		static const int MaxPopulationSize = 300;
 
     protected:
         static int NumThreads;
