@@ -55,7 +55,7 @@ namespace ABME
         static const int TMax = std::numeric_limits<TParam>::max();
 
     protected:
-        TParam FlipMutationRate = TParam(0.01 * TMax); // on T_MAX.
-        TParam MetaMutationRate = TParam(0.001 * TMax); // on T_MAX.
+        TParam FlipMutationRate = TParam(0.001 * TMax); // on T_MAX.
+        TParam MetaMutationRate = TParam(0.0001 * TMax); // on T_MAX.
     };
 }

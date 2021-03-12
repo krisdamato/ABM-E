@@ -30,6 +30,7 @@ namespace ABME
 		static const int Patterns3x1 = 8;
 		static const int Patterns3x3 = 512;
 		static const int Patterns5x5 = 33554432;
+        static const int VitalityChangePerUpdate = 0;
 
     protected:
         static int NumThreads;

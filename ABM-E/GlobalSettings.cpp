@@ -13,7 +13,7 @@ namespace ABME
     int GlobalSettings::Seed = 0;
     bool GlobalSettings::UseSingleStructuralMutationRate = false;
     bool GlobalSettings::MutationRatesEvolve = false;
-    double GlobalSettings::BaseMetaMutationRate = 0.0001;
+    double GlobalSettings::BaseMetaMutationRate = 1e-6;
 
 
     void GlobalSettings::Initialise(int numThreads)

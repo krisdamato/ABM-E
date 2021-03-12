@@ -14,7 +14,7 @@ namespace ABME
         std::string today = Helpers::CurrentTimeString();
 
         // Create a file with that name and open.
-        Filename = "C:/ABM-E/logs/Log_" + today + ".txt";
+        Filename = "D:/ABM-E/logs/Log_" + today + ".txt";
         LogFile.open(Filename);
         if (!LogFile)
         {

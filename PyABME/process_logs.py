@@ -1,6 +1,8 @@
 import argparse
+import glob
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+import os
 import re
 
 def process_logfile(filename):
@@ -142,8 +144,13 @@ def process_logfile(filename):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--logfile', required=True, help='Log file to process')
+    parser.add_argument('-l', '--logfile', required=False, help='Log file to process')
+    parser.add_argument('-f', '--final', required=False, help='Process last log file', action='store_true')
     
     args = parser.parse_args()
 
     if args.logfile: process_logfile(filename=args.logfile)
+    elif args.final: 
+        list_of_files = glob.glob('../logs/*.txt') 
+        latest_file = max(list_of_files, key=os.path.getctime)
+        process_logfile(filename=latest_file)

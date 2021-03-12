@@ -1,5 +1,5 @@
 Genes model chemicals, basic genetic units or behaviours?
-. Let's go for actual genes, not behaviours or chemicals. Chemicals are too low level, and not all checmical combinations can be replicated. Behaviours are too high level. Thus, we musn't think of each letter making up the genetic unit as a chemical, but as a type of gene coding for one structure (See below). 
+. Let's go for actual genes, not behaviours or chemicals. Chemicals are too low level, and not all chemical combinations can be replicated. Behaviours are too high level. Thus, we musn't think of each letter making up the genetic unit as a chemical, but as a type of gene coding for one structure (See below). 
 
 If they are actual genes, how do we create behaviour?
 . Genes must then do two things: create structure and behaviour. Behaviour should be indirectly caused by the structure itself: i.e. the arising structure processes input and turns it into output. So the "world rules" that detail the outcome of interaction with the world are rules tied to world building blocks, not to the genes themselves. The genes code for these building blocks and not for the behaviour that emerges out of these conglomeration of building blocks.
@@ -12,7 +12,9 @@ How can we code for structure, which in turn determines world interactions?
 How do individuals interact?
 . Individuals (i.e. barcodes) interact in two phases: the overlap phase, and the coincidence phase. The overlap phase occurs when two barcodes overlap physically but do not coincide (i.e. their origin is different). During the overlap phase, an individual merely integrates competitor barcode cells with its own (there is no competition). During the coincidence phase,  the individual enters into a "fight" with the competitor using its current barcode as a starting point. The result can be either that they reproduce, or that one eats the other. This is determined by simulating for a number of steps and counting the number of cells that remain. If cells from both survive, they reproduce. If one dies, the other wins (and is replenished in the process). If both die, they simply both die.
 
-During the coincidence phase, first the barcodes are subtracted from each other. Second, the resulting difference map is evolved according to Game of Life rules, or as closely as possible. 
+. Perhaps when indidivuals die, they do not replenish the competitor, but simply leave their resources (barcode pattern) in the environment.
+
+. During the coincidence phase, first the barcodes are subtracted from each other. Second, the resulting difference map is evolved according to Game of Life rules, or as closely as possible. 
 
 That only determines individual-individual interactions. How about individual-world interactions?
 Barcode interactions seem reasonable here too, and they allow a near infinite number of possibilities. Interactions with the world are of two types: movement and structural. Movement interactions determine the next step of movement. Structural interactions add/remove building blocks from the individual barcode or the world map.

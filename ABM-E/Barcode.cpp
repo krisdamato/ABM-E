@@ -252,7 +252,7 @@ namespace ABME
             if (useLongPatterns) Update2DWithPatternMap(oldBarcode, 5, vitality);
         }
 
-		vitality -= 10;
+		vitality += GlobalSettings::VitalityChangePerUpdate;
     }
 
 
@@ -349,7 +349,7 @@ namespace ABME
                 for (auto& pos : positions)
                 {
                     update[width * j + pos + 1] = behaviourEffect;
-					pVitality += GlobalSettings::Patterns3x1 * vitalityEffect;
+					pVitality += GlobalSettings::Patterns3x1 * vitalityEffect; // The multiplier normalizes for probability.
                 }
             }
         }
@@ -404,7 +404,7 @@ namespace ABME
         }
 
 		// This assumes that the patterns are 3x3. Throws an exception otherwise.
-		vitality += pVitality;
+        vitality += pVitality ;
 
 		if (patternSize != 9) throw std::exception("Wrong pattern size for the assumptions of this function.");
     }
@@ -442,11 +442,11 @@ namespace ABME
 
                 // Replace at the right position.
                 barcode[width * (j + replaceOffset) + i + replaceOffset] = behaviourEffect;
-				pVitality += vitalityEffect;
+				pVitality += vitalityEffect; // Normalized already.
             }
         }
 
-		vitality += pVitality;
+        vitality += pVitality;
 
 		// This assumes that the patterns are 3x3. Throws an exception otherwise.
 		if (patternWidth * patternWidth != 9) throw std::exception("Wrong pattern size for the assumptions of this function.");
