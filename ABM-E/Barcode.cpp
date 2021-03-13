@@ -137,8 +137,7 @@ namespace ABME
 
 
     /// Randomly adds food tiles to the environment.
-    /// Note: numToTake must be negative here.
-    void Barcode::DropTiles(cv::Mat& environment, int x, int y, int& numToTake, std::vector<Rect>& regions, std::vector<int>& balances, bool useActiveCells) const
+    bool Barcode::DropTiles(cv::Mat& environment, int x, int y, int numToDrop, bool useActiveCells) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
@@ -157,19 +156,17 @@ namespace ABME
             auto tileX = x + i % GlobalSettings::BarcodeSize;
             auto tileY = y + i / GlobalSettings::BarcodeSize;
 
-            // Update region balance.
-            auto index = Helpers::PointInRegionIndex(Point(tileX, tileY), regions);
-            --balances[index];
-
             // Activate tile.
             environment.at<uchar>(tileY, tileX) = 255;
-            ++numToTake;
-            if (numToTake >= 0) break;
+            --numToDrop;
+            if (numToDrop <= 0) break;
         }
+
+        return numToDrop == 0;
     }
 
 
-    void Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int& numToTake, std::vector<Rect>& regions, std::vector<int>& balances) const
+    bool Barcode::ExtractTiles(cv::Mat& environment, int x, int y, int numToTake) const
     {
         std::vector<int> relativeIndices;
         for (auto i = 0; i < GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize; ++i)
@@ -187,15 +184,13 @@ namespace ABME
             auto tileX = x + i % GlobalSettings::BarcodeSize;
             auto tileY = y + i / GlobalSettings::BarcodeSize;
 
-            // Update region balance.
-            auto index = Helpers::PointInRegionIndex(Point(tileX, tileY), regions);
-            ++balances[index];
-
             // Deactivate tile.
             environment.at<uchar>(tileY, tileX) = 0;
             --numToTake;
             if (numToTake <= 0) break;
         }
+
+        return numToTake == 0;
     }
 
 

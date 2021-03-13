@@ -21,10 +21,12 @@ namespace ABME
         ~Individual();
 
         bool BeBorn();
+        bool ChangeWorld(int cellsToTake) const;
         Individual* Clone(bool ignoreBalance) const;
         void DrawBarcode(std::string& windowName);
         const std::string& GetBarcodeString() const;
         void Kill();
+        void ProcessBarcode(cv::Vec2i& movement);
         void Update(cv::Mat& interactableEnvironment, Environment::ColocationMapType& colocations);
 
         inline bool IsAlive() const

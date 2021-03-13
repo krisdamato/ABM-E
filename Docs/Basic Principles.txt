@@ -45,3 +45,19 @@ Aside from the virtual updates, the environment barcode is also integrated into 
 How do we handle "exits", by for example, children leaving the region of the parent?
 
 What about surplus individuals? Will they never die in this case?
+
+ABME 2.0:
+
+The problem, as I see it, is one of conservation and consistency. How do we make the total resources of the system constant, so that increased population size translates into increased pressure? 
+
+. Perhaps one way would be to have organisms be a store as well, just as the environment is a store. Creatures take up resources and store them in their bodies. This leads to a further problem: how do we model world interactions so that balance is guaranteed? One option is to make genes positive-only. That is, every gene results in the uptake or conversion of some or all of the positive cells, exchanging them for fuel/vitality. The second problem is: how to interact creatures with each other, knowing that they are all stores?
+
+. In order to answer this we need to know how resources will be stored, in the creatures as well as the environment. 
+
+Can we take a simpler approach to obviate the need for precise balancing, and make all interactions a function of the current barcode?
+
+. E.g., movement is already a function of the barcode. Certain barcode states translate into certain movements. But now we can make every interaction a function of the barcode. E.g., food uptake and deposit can also be a function of the barcode, as well as dying. Say, the ideal scenario is where a barcode has approximately half of all cells active. If active fraction drops below 10%, it takes a cell from the environment. If it exceeds 90%, it drops a cell. If it hits 0% or 100%, perhaps averaging over a certain number of updates, the creature dies. 
+
+. I fear that this approach will tend towards some kind of symbiotic bloom where the environment is filled with cells (a lot of 90%+ creatures dropping food) so that creatures never die because their barcodes will be active all the time. 
+
+. But then maybe the solution is to drop the barcode burning. Dropping the barcode burning leads to a further problem: creature interactions will go away, at least when they're overlapping. Perhaps we can get away with the barcode burning. After all, barcodes summing on each other will max them out, and therefore offer increased pressure. 

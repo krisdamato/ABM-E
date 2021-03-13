@@ -80,6 +80,40 @@ namespace ABME
     }
 
 
+    /// <summary>
+    /// This assumes that world and individual updates are a function of the barcode state. Since there are many, many
+    /// barcode states, we will really be collapsing them into more or less independent partitions that lead to different
+    /// outcomes.
+    /// </summary>
+    void Individual::ProcessBarcode(Vec2i& movement)
+    {
+        // Calculate movement.
+        CurrentBarcode->ComputeMetrics(movement);
+
+        // Get active fraction.
+        float activeFraction = (float) CurrentBarcode->CountLiveCells() / (GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize);
+
+        // Map active fraction onto an individual function.
+        if ((activeFraction < GlobalSettings::KillActiveMargin) || (activeFraction > (1 - GlobalSettings::KillActiveMargin)))
+            Kill();
+        else if ((activeFraction < GlobalSettings::FoodActiveMargin) || (activeFraction > (1 - GlobalSettings::FoodActiveMargin)))
+        {
+            auto cellsToTake = activeFraction < GlobalSettings::FoodActiveMargin ? 1 : -1;
+            auto success = ChangeWorld(cellsToTake);
+            if (!success) Kill();
+        }
+    }
+
+
+    bool Individual::ChangeWorld(int cellsToTake) const
+    {
+        if (cellsToTake > 0)
+            return CurrentBarcode->ExtractTiles(ItsEnvironment.GetMap(), X, Y, cellsToTake);
+        else 
+            return CurrentBarcode->DropTiles(ItsEnvironment.GetMap(), X, Y, -cellsToTake, true);
+    }
+
+
     void Individual::Update(Mat& interactableEnvironment, Environment::ColocationMapType& colocations)
     {
         // Integrate environmental input.
@@ -89,19 +123,16 @@ namespace ABME
         // Update barcode once.
         CurrentBarcode->Update(true, ItsGeneticCode.BehaviourGenes.HasLargePatterns, Vitality);
 
+        // Update individual and world as a function of barcode.
+        Vec2i movement;
+        ProcessBarcode(movement);
+
 		// Update individual parameters.
 		Age++;
-		if (Vitality <= -100 || Vitality >= 100)
-		{
-			Alive = false;
-			return;
-		}
+		
+        if (Alive == false) return;
 
-        // Calculate movement and consumption.
-        Vec2i movement;
-        CurrentBarcode->ComputeMetrics(movement);
-
-        // Compute movement and collisions.
+        // Clamp movement to avoid wall collisions.
         int newX = X + GlobalSettings::DistanceStep * movement[0];
         int newY = Y + GlobalSettings::DistanceStep * movement[1];
 		ItsEnvironment.ClampPositions(newX, newY);

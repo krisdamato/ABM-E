@@ -14,6 +14,8 @@ namespace ABME
     bool GlobalSettings::UseSingleStructuralMutationRate = false;
     bool GlobalSettings::MutationRatesEvolve = false;
     double GlobalSettings::BaseMetaMutationRate = 1e-6;
+    double GlobalSettings::KillActiveMargin = 1e-3;
+    double GlobalSettings::FoodActiveMargin = 1e-1;
 
 
     void GlobalSettings::Initialise(int numThreads)

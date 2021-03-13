@@ -25,6 +25,8 @@ namespace ABME
         static bool MutationRatesEvolve;
         static bool UseSingleStructuralMutationRate;
         static double BaseMetaMutationRate;
+        static double KillActiveMargin;
+        static double FoodActiveMargin;
 		static const int MaxPopulationSize = 600;
 		static const int Patterns1x1 = 1;
 		static const int Patterns3x1 = 8;
