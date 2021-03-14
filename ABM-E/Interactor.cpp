@@ -33,14 +33,67 @@ namespace ABME
     /// Either both die, or one dies, or both live and produce an offspring.
     Individual* Interactor::Interact(Environment& environment, Individual& first, Individual& second)
     {
+        // Clone barcodes.
+        auto firstClone = *first.CurrentBarcode;
+        auto secondClone = *second.CurrentBarcode;
+        auto firstCloneNext = *first.CurrentBarcode;
+        auto secondCloneNext = *second.CurrentBarcode;
+        auto firstCount = 0;
+        auto secondCount = 0;
+        auto firstHasLargePatterns = first.ItsGeneticCode.BehaviourGenes.HasLargePatterns;
+        auto secondHasLargePatterns = second.ItsGeneticCode.BehaviourGenes.HasLargePatterns;
+
+        bool killFirst = false;
+        bool killSecond = false;
+        for (auto i = 0; i < GlobalSettings::NumInteractionUpdates; ++i)
+        {
+            // Keep the complement of the intersection.
+            firstCloneNext.Subtract(secondClone);
+            secondCloneNext.Subtract(firstClone);
+
+            // Update barcodes.
+            float t1 = 0.f, t2 = 0.f; // TODO: To remove!
+            firstCloneNext.Update(true, firstHasLargePatterns, t1);
+            secondCloneNext.Update(true, secondHasLargePatterns, t2);
+
+            // Replace barcodes of the next iteration.
+            firstClone.SetStringRepresentation(firstCloneNext.GetStringRepresentation());
+            secondClone.SetStringRepresentation(secondCloneNext.GetStringRepresentation());
+
+            // Count the number of "live" cells in each.
+            // Get active fraction.
+            float firstActiveFraction = (float)firstClone.CountLiveCells() / (GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize);
+            float secondActiveFraction = (float)secondClone.CountLiveCells() / (GlobalSettings::BarcodeSize * GlobalSettings::BarcodeSize);
+
+            if ((firstActiveFraction < GlobalSettings::KillActiveMargin) || (firstActiveFraction > (1 - GlobalSettings::KillActiveMargin)))
+            {
+                killFirst = true;
+                break;
+            }
+                
+            if ((secondActiveFraction < GlobalSettings::KillActiveMargin) || (secondActiveFraction > (1 - GlobalSettings::KillActiveMargin)))
+            {
+                killSecond = true;
+                break;
+            }
+        }
+
+        // Kill em if necessary.
+        if (killFirst) first.Kill();
+        if (killSecond) second.Kill();
+
         // If chromosomes have to be equal length, check to make sure.
         if (GlobalSettings::ForceEqualChromosomeReproductions && first.ItsGeneticCode.Length() != second.ItsGeneticCode.Length()) return nullptr;
 
         // If both are still alive and they are genetically compatible, let's reproduce!
         // Otherwise nothing happens.
-        const auto& offspring = Reproduce(first, second);
+        if (first.IsAlive() && second.IsAlive())
+        {
+            const auto& offspring = Reproduce(first, second);
+            return offspring;
+        }
 
-        return offspring;
+        return nullptr;
     }
 
 

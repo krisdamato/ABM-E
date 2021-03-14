@@ -16,7 +16,7 @@ namespace ABME
 		static const int BarcodeSize = 16;
         //static const int NumBehaviourGenes = 33554432 + 522; // Includes 5x5 genes...
         static const int NumBehaviourGenes = 522; // Up to 3x3 genes
-        static const bool Randomise = false;
+        static const bool Randomise = true;
         static const int CrisisPopulationSize = 500;
         static const int BehaviourGenePossibilities = 4;
         static bool ForceEqualChromosomeReproductions;
@@ -27,12 +27,13 @@ namespace ABME
         static double BaseMetaMutationRate;
         static double KillActiveMargin;
         static double FoodActiveMargin;
-		static const int MaxPopulationSize = 600;
+		static const int MaxPopulationSize = 1200;
 		static const int Patterns1x1 = 1;
 		static const int Patterns3x1 = 8;
 		static const int Patterns3x3 = 512;
 		static const int Patterns5x5 = 33554432;
         static const int VitalityChangePerUpdate = 0;
+        static const int NumInteractionUpdates = 10;
 
     protected:
         static int NumThreads;
